@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "open_spiel/games/kuhn_poker.h"
+#include "open_spiel/games/risk.h"
 
 #include <algorithm>
 #include <array>
@@ -28,7 +28,7 @@
 #include "open_spiel/spiel_utils.h"
 
 namespace open_spiel {
-namespace kuhn_poker {
+namespace risk {
 namespace {
 
 // Default parameters.
@@ -36,42 +36,42 @@ constexpr int kDefaultPlayers = 2;
 constexpr double kAnte = 1;
 
 // Facts about the game
-const GameType kGameType{/*short_name=*/"kuhn_poker",
-                         /*long_name=*/"Kuhn Poker",
+const GameType kGameType{/*short_name=*/"risk",
+                         /*long_name=*/"Risk",
                          GameType::Dynamics::kSequential,
-                         GameType::ChanceMode::kExplicitStochastic,
+                         GameType::ChanceMode::kSampledStochastic,
                          GameType::Information::kImperfectInformation,
                          GameType::Utility::kZeroSum,
                          GameType::RewardModel::kTerminal,
-                         /*max_num_players=*/10,
-                         /*min_num_players=*/2,
-                         /*provides_information_state_string=*/true,
-                         /*provides_information_state_tensor=*/true,
-                         /*provides_observation_string=*/true,
+                         /*max_num_players=*/kNumPlayers,
+                         /*min_num_players=*/kNumPlayers,
+                         /*provides_information_state_string=*/false,
+                         /*provides_information_state_tensor=*/false,
+                         /*provides_observation_string=*/false,
                          /*provides_observation_tensor=*/true,
                          /*parameter_specification=*/
-                         {{"players", GameParameter(kDefaultPlayers)}},
+                          {{"players", GameParameter(kDefaultPlayers)}}  ,
                          /*default_loadable=*/true,
                          /*provides_factored_observation_string=*/true,
                         };
 
 std::shared_ptr<const Game> Factory(const GameParameters& params) {
-  return std::shared_ptr<const Game>(new KuhnGame(params));
+  return std::shared_ptr<const Game>(new RiskGame(params));
 }
 
 REGISTER_SPIEL_GAME(kGameType, Factory);
 }  // namespace
 
-class KuhnObserver : public Observer {
+class RiskObserver : public Observer {
  public:
-  KuhnObserver(IIGObservationType iig_obs_type)
+  RiskObserver(IIGObservationType iig_obs_type)
       : Observer(/*has_string=*/true, /*has_tensor=*/true),
         iig_obs_type_(iig_obs_type) {}
 
   void WriteTensor(const State& observed_state, int player,
                    Allocator* allocator) const override {
-    const KuhnState& state =
-        open_spiel::down_cast<const KuhnState&>(observed_state);
+    const RiskState& state =
+        open_spiel::down_cast<const RiskState&>(observed_state);
     SPIEL_CHECK_GE(player, 0);
     SPIEL_CHECK_LT(player, state.num_players_);
     const int num_players = state.num_players_;
@@ -105,70 +105,11 @@ class KuhnObserver : public Observer {
     }
   }
 
-  std::string StringFrom(const State& observed_state,
-                         int player) const override {
-    const KuhnState& state =
-        open_spiel::down_cast<const KuhnState&>(observed_state);
-    SPIEL_CHECK_GE(player, 0);
-    SPIEL_CHECK_LT(player, state.num_players_);
-    std::string result;
-
-    // Private card
-    if (iig_obs_type_.private_info == PrivateInfoType::kSinglePlayer) {
-      if (iig_obs_type_.perfect_recall || iig_obs_type_.public_info) {
-        if (state.history_.size() > player) {
-          absl::StrAppend(&result, state.history_[player].action);
-        }
-      } else {
-        if (state.history_.size() == 1 + player) {
-          absl::StrAppend(&result, "Received card ",
-                          state.history_[player].action);
-        }
-      }
-    }
-
-    // Betting.
-    // TODO(author11) Make this more self-consistent.
-    if (iig_obs_type_.public_info) {
-      if (iig_obs_type_.perfect_recall) {
-        // Perfect recall public info.
-        for (int i = state.num_players_; i < state.history_.size(); ++i)
-          result.push_back(state.history_[i].action ? 'b' : 'p');
-      } else {
-        // Imperfect recall public info - two different formats.
-        if (iig_obs_type_.private_info == PrivateInfoType::kNone) {
-          if (state.history_.empty()) {
-            absl::StrAppend(&result, kStartOfGamePublicObservation);
-          } else if (state.history_.size() > state.num_players_) {
-            absl::StrAppend(&result,
-                            state.history_.back().action ? "Bet" : "Pass");
-          }
-        } else {
-          if (state.history_.size() > player) {
-            for (auto p = Player{0}; p < state.num_players_; p++) {
-              absl::StrAppend(&result, state.ante_[p]);
-            }
-          }
-        }
-      }
-    }
-
-    // Fact that we're dealing a card.
-    if (iig_obs_type_.public_info &&
-        iig_obs_type_.private_info == PrivateInfoType::kNone &&
-        !state.history_.empty() &&
-        state.history_.size() <= state.num_players_) {
-      int currently_dealing_to_player = state.history_.size() - 1;
-      absl::StrAppend(&result, "Deal to player ", currently_dealing_to_player);
-    }
-    return result;
-  }
-
  private:
   IIGObservationType iig_obs_type_;
 };
 
-KuhnState::KuhnState(std::shared_ptr<const Game> game)
+RiskState::RiskState(std::shared_ptr<const Game> game)
     : State(game),
       first_bettor_(kInvalidPlayer),
       card_dealt_(game->NumPlayers() + 1, kInvalidPlayer),
@@ -177,7 +118,7 @@ KuhnState::KuhnState(std::shared_ptr<const Game> game)
       // How much each player has contributed to the pot, indexed by pid.
       ante_(game->NumPlayers(), kAnte) {}
 
-int KuhnState::CurrentPlayer() const {
+int RiskState::CurrentPlayer() const {
   if (IsTerminal()) {
     return kTerminalPlayerId;
   } else {
@@ -186,89 +127,269 @@ int KuhnState::CurrentPlayer() const {
   }
 }
 
-void KuhnState::DoApplyAction(Action move) {
+void RiskState::DoApplyAction(Action action){
   // Additional book-keeping
-  if (history_.size() < num_players_) {
-    // Give card `move` to player `history_.size()` (CurrentPlayer will return
-    // kChancePlayerId, so we use that instead).
-    card_dealt_[move] = history_.size();
-  } else if (move == ActionType::kBet) {
-    if (first_bettor_ == kInvalidPlayer) first_bettor_ = CurrentPlayer();
-    pot_ += 1;
-    ante_[CurrentPlayer()] += kAnte;
-  }
+	int player = GetPlayer();
+	if (action_id == kPhseConstants[9]) {
+		switch (GetPhse()) {
+		case 4:
+			Attack();
+			break;
+		case 6:
+			Deal();
+			break;
+		case 8:
+			Deal();
+			break;
+		}
+		return;
+	}
+	else {
+		int t_action = action_id - kPhseConstants[GetPhse()];
+		switch (GetPhse()) {
+		case 0: {
+			if (t_action == 0) {
+				Cash();
+			}
+			else {
+				SetCoord(t_action - 1);
+			}
+			break;
+		}
+		case 1:
+			if (kDepAbs == false) {
 
-  // We undo that before exiting the method.
-  // This is used in `DidBet`.
-  history_.push_back({CurrentPlayer(), move});
-
-  // Check for the game being over.
-  const int num_actions = history_.size() - num_players_;
-  if (first_bettor_ == kInvalidPlayer && num_actions == num_players_) {
-    // Nobody bet; the winner is the person with the highest card dealt,
-    // which is either the highest or the next-highest card.
-    // Losers lose 1, winner wins 1 * (num_players - 1)
-    winner_ = card_dealt_[num_players_];
-    if (winner_ == kInvalidPlayer) winner_ = card_dealt_[num_players_ - 1];
-  } else if (first_bettor_ != kInvalidPlayer &&
-             num_actions == num_players_ + first_bettor_) {
-    // There was betting; so the winner is the person with the highest card
-    // who stayed in the hand.
-    // Check players in turn starting with the highest card.
-    for (int card = num_players_; card >= 0; --card) {
-      const Player player = card_dealt_[card];
-      if (player != kInvalidPlayer && DidBet(player)) {
-        winner_ = player;
-        break;
-      }
-    }
-    SPIEL_CHECK_NE(winner_, kInvalidPlayer);
-  }
-  history_.pop_back();
+				Deploy(t_action + 1);
+			}
+			else {
+				Deploy(RetAbstraction(t_action, kDepAbs));
+			}
+			break;
+		case 2:
+			if (t_action == 0) {
+				SetFortify();
+			}
+			else {
+				SetCoord(t_action - 1);
+				auto troops = GetTroopArr(player);
+			}
+			break;
+		case 3:
+			SetCoord(t_action);
+			break;
+		case 4:
+			if (kAtkAbs == false) {
+				SetAtkNum(t_action + 1);
+			}
+			else {
+				SetAtkNum(RetAbstraction(t_action, kAtkAbs));
+			}
+			SetChance(1);
+			break;
+		case 5:
+			if (t_action == 0) {
+				SetAttack();
+			}
+			else if (kRedistAbs == false) {
+				Redistribute(t_action);
+			}
+			else {
+				Redistribute(RetAbstraction(t_action - 1, kRedistAbs));
+			}
+			break;
+		case 6:
+			if (t_action == 0) {
+				EndTurn();
+			}
+			else {
+				SetCoord(t_action - 1);
+			}
+			break;
+		case 7:
+			SetCoord(t_action);
+			break;
+		case 8:
+			if (kFortAbs == false) {
+				Fortify(t_action + 1);
+			}
+			else {
+				Fortify(RetAbstraction(t_action, kFortAbs));
+			}
+			break;
+		}
+	}
+	history_.push_back(PlayerAction{ CurrentPlayer(), action_id });
+	move_number_ += 1;
 }
 
-std::vector<Action> KuhnState::LegalActions() const {
-  if (IsTerminal()) return {};
-  if (IsChanceNode()) {
-    std::vector<Action> actions;
-    for (int card = 0; card < card_dealt_.size(); ++card) {
-      if (card_dealt_[card] == kInvalidPlayer) actions.push_back(card);
-    }
-    return actions;
-  } else {
-    return {ActionType::kPass, ActionType::kBet};
-  }
+std::vector<Action> RiskState::LegalActions() const {
+	std::vector<Action> res = {};
+	int player = GetPlayer();
+	if (GetChance() == 1) {
+		res.push_back(kPhseConstants[9]);
+	}
+	else {
+		switch (GetPhse()) {
+		case 0: {//returns legal dep_to's
+			if (GetCashable(player)) {
+				res.push_back(0);
+			}
+			bool map_occupied = true;
+			for (int i = 0; i < kNumTerrs; ++i)
+				if (GetOwner(i) == kNumPlayers) {
+					map_occupied = false;
+					res.push_back(i + 1);
+				}
+			if (map_occupied) {
+				for (int i = 0; i < kNumTerrs; ++i)
+					if (board[player * kNumTerrs + i] != 0) {
+						res.push_back(i + 1);
+					}
+			}
+			break;
+		}
+		case 1: {
+			if (kDepAbs == false) {
+				for (int i = 0; i < GetIncome(); ++i) {
+					res.push_back(i + kPhseConstants[1]);
+				}
+			}
+			else {
+				std::vector<int> abs = GetAbstraction(GetIncome(), kDepAbs);
+				for (size_t i = 0; i < abs.size(); ++i) {
+					res.push_back(abs[i] + kPhseConstants[1]);
+				}
+
+			}
+			break;
+		}
+			  //returns legal dep_q's
+		case 2: {//returns legal atk_from's
+			std::array<bool, kNumTerrs> attackable_mask = { 0 };
+			std::array<int, kNumTerrs> troop_arr = GetTroopArr(player);
+			std::array<bool, kNumTerrs> anti_mask = { 0 };
+			for (int i = 0; i < kNumTerrs; ++i) {
+				if (troop_arr[i] > 1) {
+					attackable_mask[i] = 1;
+				}
+				else if (troop_arr[i] == 0) {
+					anti_mask[i] = 1;
+				}
+			}
+			res.push_back(kPhseConstants[2]);
+			std::array<bool, kNumTerrs> atk_from = { 0 };
+			for (int i = 0; i < kNumTerrs; ++i) {
+				for (int j = 0; j < kNumTerrs; ++j) {
+					if (attackable_mask[i] && anti_mask[j] && kAdjMatrix[i][j]) {
+						atk_from[i] = 1;
+						res.push_back(kPhseConstants[2] + 1 + i);
+						break;
+					}
+				}
+			}
+			break;
+		}
+		case 3: {
+			int from_coord = GetCoord(2);
+			std::array<int, kNumTerrs> troop_arr = GetTroopArr(player);
+			for (int i = 0; i < kNumTerrs; ++i) {
+				if (kAdjMatrix[i][from_coord] && troop_arr[i] == 0) {
+					res.push_back(i + kPhseConstants[3]);
+				}
+			}
+			break;
+		}
+			  //returns legal atk_to's
+		case 4: {
+			int coord_from = GetCoord(2);
+			int atk_num = board[player * kNumTerrs + coord_from];
+			if (kAtkAbs == false) {
+				for (int i = 0; i < atk_num - 1; ++i) {
+					res.push_back(i + kPhseConstants[4]);
+				}
+			}
+			else {
+				std::vector<int> abs = GetAbstraction(atk_num - 1, kAtkAbs);
+				for (size_t i = 0; i < abs.size(); ++i) {
+					res.push_back(abs[i] + kPhseConstants[4]);
+				}
+			}
+			break;
+		}
+			  //returns legal atk_q's
+		case 5: {
+			int coord_from = GetCoord(3);
+			int redist_num = board[player * kNumTerrs + coord_from];
+			res.push_back(0 + kPhseConstants[5]);
+			if (kRedistAbs == false) {
+				for (int i = 0; i < redist_num - 1; ++i) {
+					res.push_back(i + 1 + kPhseConstants[5]);
+				}
+			}
+			else {
+				std::vector<int> abs = GetAbstraction(redist_num - 1, kRedistAbs);
+				for (size_t i = 0; i < abs.size(); ++i) {
+					res.push_back(abs[i] + 1 + kPhseConstants[5]);
+				}
+			}
+			break;
+		}//returns legal redist_q's
+
+		case 6: {
+			std::array<int, kNumTerrs> troop_arr = GetTroopArr(player);
+			res.push_back(kPhseConstants[6]);
+			for (int i = 0; i < kNumTerrs; ++i) {
+				if (troop_arr[i] > 1) {
+					for (int j = 0; j < kNumTerrs; ++j) {
+						if (troop_arr[j] && kAdjMatrix[i][j] && i != j) {
+							res.push_back(kPhseConstants[6] + 1 + i);
+							std::cout << kTerrNames[i] + "\n";
+							break;
+						}
+					}
+				}
+			}
+			break;
+		}//returns legal fort_from's
+		case 7: {
+			int from_coord = GetCoord(6);
+			std::array<bool, kNumTerrs> dfs_arr = { 0 };
+			DepthFirstSearch(player, from_coord, &dfs_arr);
+			for (int i = 0; i < kNumTerrs; ++i) {
+				if (dfs_arr[i] && i != from_coord) {
+					res.push_back(kPhseConstants[7] + i);
+				}
+			}
+			break;
+		}
+			  //returns legal fort_to's needs to use depth first search
+		case 8: {
+			int from_coord = GetCoord(6);
+			int to_coord = GetCoord(7);
+			std::array<int, kNumTerrs> troop_arr = GetTroopArr(player);
+			if (kFortAbs == false) {
+				for (int i = 0; i < troop_arr[from_coord]; ++i) {
+					res.push_back(kPhseConstants[8] + i);
+				}
+			}
+			else {
+				std::vector<int> abs = GetAbstraction(troop_arr[from_coord] - 1, kFortAbs);
+				for (int i = 0; i != abs.size(); ++i) {
+					res.push_back(abs[i] + kPhseConstants[8]);
+				}
+			}
+			break;
+		}
+		}
+
+	}
+	return res;
 }
 
-std::string KuhnState::ActionToString(Player player, Action move) const {
-  if (player == kChancePlayerId)
-    return absl::StrCat("Deal:", move);
-  else if (move == ActionType::kPass)
-    return "Pass";
-  else
-    return "Bet";
-}
 
-std::string KuhnState::ToString() const {
-  // The deal: space separated card per player
-  std::string str;
-  for (int i = 0; i < history_.size() && i < num_players_; ++i) {
-    if (!str.empty()) str.push_back(' ');
-    absl::StrAppend(&str, history_[i].action);
-  }
+bool RiskState::IsTerminal() const { return winner_ != kInvalidPlayer; }
 
-  // The betting history: p for Pass, b for Bet
-  if (history_.size() > num_players_) str.push_back(' ');
-  for (int i = num_players_; i < history_.size(); ++i) {
-    str.push_back(history_[i].action ? 'b' : 'p');
-  }
-
-  return str;
-}
-
-bool KuhnState::IsTerminal() const { return winner_ != kInvalidPlayer; }
-
-std::vector<double> KuhnState::Returns() const {
+std::vector<double> RiskState::Returns() const {
   if (!IsTerminal()) {
     return std::vector<double>(num_players_, 0.0);
   }
@@ -281,50 +402,20 @@ std::vector<double> KuhnState::Returns() const {
   return returns;
 }
 
-std::string KuhnState::InformationStateString(Player player) const {
-  const KuhnGame& game = open_spiel::down_cast<const KuhnGame&>(*game_);
-  return game.info_state_observer_->StringFrom(*this, player);
-}
 
-std::string KuhnState::ObservationString(Player player) const {
-  const KuhnGame& game = open_spiel::down_cast<const KuhnGame&>(*game_);
-  return game.default_observer_->StringFrom(*this, player);
-}
-
-void KuhnState::InformationStateTensor(Player player,
-                                       absl::Span<float> values) const {
-  ContiguousAllocator allocator(values);
-  const KuhnGame& game = open_spiel::down_cast<const KuhnGame&>(*game_);
-  game.info_state_observer_->WriteTensor(*this, player, &allocator);
-}
-
-void KuhnState::ObservationTensor(Player player,
+void RiskState::ObservationTensor(Player player,
                                   absl::Span<float> values) const {
   ContiguousAllocator allocator(values);
-  const KuhnGame& game = open_spiel::down_cast<const KuhnGame&>(*game_);
+  const RiskGame& game = open_spiel::down_cast<const RiskGame&>(*game_);
   game.default_observer_->WriteTensor(*this, player, &allocator);
 }
 
-std::unique_ptr<State> KuhnState::Clone() const {
-  return std::unique_ptr<State>(new KuhnState(*this));
+std::unique_ptr<State> RiskState::Clone() const {
+  return std::unique_ptr<State>(new RiskState(*this));
 }
 
-void KuhnState::UndoAction(Player player, Action move) {
-  if (history_.size() <= num_players_) {
-    // Undoing a deal move.
-    card_dealt_[move] = kInvalidPlayer;
-  } else {
-    // Undoing a bet / pass.
-    if (move == ActionType::kBet) {
-      pot_ -= 1;
-      if (player == first_bettor_) first_bettor_ = kInvalidPlayer;
-    }
-    winner_ = kInvalidPlayer;
-  }
-  history_.pop_back();
-}
 
-std::vector<std::pair<Action, double>> KuhnState::ChanceOutcomes() const {
+std::vector<std::pair<Action, double>> RiskState::ChanceOutcomes() const {
   SPIEL_CHECK_TRUE(IsChanceNode());
   std::vector<std::pair<Action, double>> outcomes;
   const double p = 1.0 / (num_players_ + 1 - history_.size());
@@ -334,72 +425,28 @@ std::vector<std::pair<Action, double>> KuhnState::ChanceOutcomes() const {
   return outcomes;
 }
 
-bool KuhnState::DidBet(Player player) const {
-  if (first_bettor_ == kInvalidPlayer) {
-    return false;
-  } else if (player == first_bettor_) {
-    return true;
-  } else if (player > first_bettor_) {
-    return history_[num_players_ + player].action == ActionType::kBet;
-  } else {
-    return history_[num_players_ * 2 + player].action == ActionType::kBet;
-  }
-}
 
-std::unique_ptr<State> KuhnState::ResampleFromInfostate(
-    int player_id, std::function<double()> rng) const {
-  std::unique_ptr<State> state = game_->NewInitialState();
-  Action player_chance = history_.at(player_id).action;
-  for (int p = 0; p < game_->NumPlayers(); ++p) {
-    if (p == history_.size()) return state;
-    if (p == player_id) {
-      state->ApplyAction(player_chance);
-    } else {
-      Action other_chance = player_chance;
-      while (other_chance == player_chance) {
-        other_chance = SampleAction(state->ChanceOutcomes(), rng()).first;
-      }
-      state->ApplyAction(other_chance);
-    }
-  }
-  SPIEL_CHECK_GE(state->CurrentPlayer(), 0);
-  if (game_->NumPlayers() == history_.size()) return state;
-  for (int i = game_->NumPlayers(); i < history_.size(); ++i) {
-    state->ApplyAction(history_.at(i).action);
-  }
-  return state;
-}
-
-KuhnGame::KuhnGame(const GameParameters& params)
+RiskGame::RiskGame(const GameParameters& params)
     : Game(kGameType, params), num_players_(ParameterValue<int>("players")) {
   SPIEL_CHECK_GE(num_players_, kGameType.min_num_players);
   SPIEL_CHECK_LE(num_players_, kGameType.max_num_players);
-  default_observer_ = std::make_shared<KuhnObserver>(kDefaultObsType);
-  info_state_observer_ = std::make_shared<KuhnObserver>(kInfoStateObsType);
-  private_observer_ = std::make_shared<KuhnObserver>(
+  default_observer_ = std::make_shared<RiskObserver>(kDefaultObsType);
+  info_state_observer_ = std::make_shared<RiskObserver>(kInfoStateObsType);
+  private_observer_ = std::make_shared<RiskObserver>(
       IIGObservationType{.public_info = false,
                          .perfect_recall = false,
                          .private_info = PrivateInfoType::kSinglePlayer});
-  public_observer_ = std::make_shared<KuhnObserver>(
+  public_observer_ = std::make_shared<RiskObserver>(
       IIGObservationType{.public_info = true,
                          .perfect_recall = false,
                          .private_info = PrivateInfoType::kNone});
 }
 
-std::unique_ptr<State> KuhnGame::NewInitialState() const {
-  return std::unique_ptr<State>(new KuhnState(shared_from_this()));
+std::unique_ptr<State> RiskGame::NewInitialState() const {
+  return std::unique_ptr<State>(new RiskState(shared_from_this()));
 }
 
-std::vector<int> KuhnGame::InformationStateTensorShape() const {
-  // One-hot for whose turn it is.
-  // One-hot encoding for the single private card. (n+1 cards = n+1 bits)
-  // Followed by 2 (n - 1 + n) bits for betting sequence (longest sequence:
-  // everyone except one player can pass and then everyone can bet/pass).
-  // n + n + 1 + 2 (n-1 + n) = 6n - 1.
-  return {6 * num_players_ - 1};
-}
-
-std::vector<int> KuhnGame::ObservationTensorShape() const {
+std::vector<int> RiskGame::ObservationTensorShape() const {
   // One-hot for whose turn it is.
   // One-hot encoding for the single private card. (n+1 cards = n+1 bits)
   // Followed by the contribution of each player to the pot (n).
@@ -407,7 +454,7 @@ std::vector<int> KuhnGame::ObservationTensorShape() const {
   return {3 * num_players_ + 1};
 }
 
-double KuhnGame::MaxUtility() const {
+double RiskGame::MaxUtility() const {
   // In poker, the utility is defined as the money a player has at the end
   // of the game minus then money the player had before starting the game.
   // Everyone puts a chip in at the start, and then they each have one more
@@ -415,7 +462,7 @@ double KuhnGame::MaxUtility() const {
   return (num_players_ - 1) * 2;
 }
 
-double KuhnGame::MinUtility() const {
+double RiskGame::MinUtility() const {
   // In poker, the utility is defined as the money a player has at the end
   // of the game minus then money the player had before starting the game.
   // In Kuhn, the most any one player can lose is the single chip they paid
@@ -423,24 +470,12 @@ double KuhnGame::MinUtility() const {
   return -2;
 }
 
-std::shared_ptr<Observer> KuhnGame::MakeObserver(
+std::shared_ptr<Observer> RiskGame::MakeObserver(
     absl::optional<IIGObservationType> iig_obs_type,
     const GameParameters& params) const {
   if (!params.empty()) SpielFatalError("Observation params not supported");
-  return std::make_shared<KuhnObserver>(iig_obs_type.value_or(kDefaultObsType));
+  return std::make_shared<RiskObserver>(iig_obs_type.value_or(kDefaultObsType));
 }
 
-TabularPolicy GetAlwaysPassPolicy(const Game& game) {
-  SPIEL_CHECK_TRUE(
-      dynamic_cast<KuhnGame*>(const_cast<Game*>(&game)) != nullptr);
-  return GetPrefActionPolicy(game, {ActionType::kPass});
-}
-
-TabularPolicy GetAlwaysBetPolicy(const Game& game) {
-  SPIEL_CHECK_TRUE(
-      dynamic_cast<KuhnGame*>(const_cast<Game*>(&game)) != nullptr);
-  return GetPrefActionPolicy(game, {ActionType::kBet});
-}
-
-}  // namespace kuhn_poker
+}  // namespace risk
 }  // namespace open_spiel

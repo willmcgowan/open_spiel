@@ -761,6 +761,15 @@ int RiskState::RetAbstraction(int action,int abs) const {
     }
     return (int)std::floor((action + 1) * num / abs);
 }
+//this could be very stupid and bad//
+RiskState::RiskState(std::shared_ptr<Game>game)
+: State(game),board{0},
+move_number_(0),
+num_distinct_actions(kPhseConstants[9]){
+    SetIncome(1);
+    SetPlayer(0);
+    SetPhse(0);
+}
 
 int RiskState::CurrentPlayer() const {
   if (IsTerminal()) {

@@ -65,7 +65,7 @@ REGISTER_SPIEL_GAME(kGameType, Factory);
 class RiskObserver : public Observer {
  public:
   RiskObserver(IIGObservationType iig_obs_type)
-      : Observer(/*has_string=*/true, /*has_tensor=*/true),
+      : Observer(/*has_string=*/false, /*has_tensor=*/true),
         iig_obs_type_(iig_obs_type) {}
 
   void WriteTensor(const State& observed_state, int player,
@@ -117,6 +117,650 @@ RiskState::RiskState(std::shared_ptr<const Game> game)
       pot_(kAnte * game->NumPlayers()),
       // How much each player has contributed to the pot, indexed by pid.
       ante_(game->NumPlayers(), kAnte) {}
+
+void RiskState::ResetPlayer() {
+    for (int i = 0; i < kNumPlayers; ++i) {
+        board[kNumPlayers * kNumTerrs + i] = 0;
+    }
+}
+
+void RiskState::SetPlayer(int player) {
+    ResetPlayer();
+    board[kNumPlayers * kNumTerrs + player] = 1;
+}
+
+void RiskState::SetNextPlayer() {
+    int cur_player = GetPlayer();
+    int new_player = (cur_player + 1) % kNumPlayers;
+    board[kNumPlayers * kNumTerrs + cur_player] = 0;
+    board[kNumPlayers * kNumTerrs + new_player] = 1;
+    if (new_player == 0) {
+        IncrementTurns(1);
+    }
+}
+
+int RiskState::GetPlayer() const {
+    for (int i = 0; i < kNumPlayers; ++i) {
+        if (board[kNumPlayers * kNumTerrs + i] == 1) {
+            return i;
+        }
+    }
+    return kNumPlayers;
+}
+
+int RiskState::GetTurns() const{
+    return board[kNumPlayers * kNumTerrs + kNumPlayers];
+}
+
+void RiskState::IncrementTurns(int increment) {
+    board[kNumPlayers * kNumTerrs + kNumPlayers] += 1;
+}
+
+void RiskState::ResetPhse() {
+    for (int i = 0; i < 9; ++i) {
+        board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + i] = 0;
+    }
+}
+
+void RiskState::SetPhse(int phse) {
+    ResetPhse();
+    board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + phse] = 1;
+}
+
+int RiskState::GetPhse() const{
+    for (int i = 0; i < 9; ++i) {
+        if (board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + i] == 1) {
+            return i;
+        }
+    }
+    return 9;
+}
+
+void RiskState::SetIncome(int income) {
+    board[kNumPlayers * kNumTerrs + kNumPlayers + 2 + 9] = income;
+}
+
+int RiskState::GetIncome() const {
+    return board[kNumPlayers * kNumTerrs + kNumPlayers + 2 + 9];
+}
+
+void RiskState::IncrementIncome(int increment) {
+    board[kNumPlayers * kNumTerrs + kNumPlayers + 2 + 9] += increment;
+}
+
+void RiskState::SetChance(int chance) {
+    board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + 9] = chance;
+}
+
+int RiskState::GetChance() const {
+    return board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + 9];
+}
+
+void RiskState::SetTerr(int coord,int player,int troops) {
+    board[player * kNumTerrs + coord] = troops;
+}
+
+void RiskState::IncrementTerr(int coord,int player, int increment) {
+    board[player*kNumTerrs + coord] += increment;
+}
+
+void RiskState::SetSucc(int val) {
+    board[kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 5 * kNumTerrs] = val;
+}
+
+int RiskState::GetSucc() const{
+    return board[kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 5 * kNumTerrs];
+}
+
+void RiskState::ResetActions() {
+    for (int i = kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9; i < kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 5 * kNumTerrs; ++i) {
+        board[i] = 0;
+    }
+}
+
+void RiskState::SetCoord(int coord) {
+    switch (GetPhse()) {
+    case 0:
+        //dep_to//
+        board[kNumPlayers * kNumTerrs + kNumPlayers + 3 +9+ coord]=1;
+        SetPhse(1);
+        break;
+    case 2:
+        //atk_from//
+        board[kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + kNumTerrs+coord] = 1;
+        SetPhse(3);
+        break;
+    case 3:
+        //atk_to/
+        board[kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + 2*kNumTerrs + coord] = 1;
+        SetPhse(4);
+        break;
+    case 6:
+        //fort_from//
+        board[kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 3 * kNumTerrs + coord] = 1;
+        SetPhse(7);
+        break;
+    case 7:
+        //fort_to//
+        board[kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 4 * kNumTerrs + coord] = 1;
+        SetPhse(8);
+        break;
+    }
+}
+
+int RiskState::GetCoord(int phse) const {
+    int constant = 0;
+    switch (phse) {
+    case 0:
+        constant = kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9;
+        break;
+    case 2:
+        constant = kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + kNumTerrs;
+        break;
+    case 3:
+        constant = kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + 2 * kNumTerrs;
+        break;
+    case 6:
+        constant = kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 3 * kNumTerrs;
+        break;
+    case 7:
+        constant = kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 4 * kNumTerrs;
+        break;
+    }
+    for (int i = 0; i < kNumTerrs; ++i) {
+        if (board[constant + i] == 1) {
+            return i;
+        }
+    }
+    return kNumTerrs;
+}
+
+void RiskState::SetAtkNum(int num) {
+    board[kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + 3 * kNumTerrs] = num;
+    SetChance(1);
+}
+
+int RiskState::GetAtkNum() const {
+    return board[kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + 3 * kNumTerrs];
+}
+
+void RiskState::SetDeploy() {
+    ResetActions();
+    SetPhse(0);
+}
+
+void RiskState::SetAttack() {
+    ResetActions();
+    SetPhse(2);
+}
+
+void RiskState::SetRedistribute() {
+    SetPhse(5);
+}
+
+void RiskState::SetFortify() {
+    ResetActions();
+    SetPhse(6);
+}
+
+void RiskState::SetCard(int player, int card_coord,int amount){
+    board[kNumPlayers * kNumTerrs + kNumPlayers + 5 + 9 + 5 * kNumTerrs + (kNumTerrs + 2) * player + card_coord] = amount;
+}
+
+bool RiskState::GetCard(int player, int card_coord) const{
+    return board[kNumPlayers * kNumTerrs + kNumPlayers + 5 + 9 + 5 * kNumTerrs + (kNumTerrs + 2) * player + card_coord];
+}
+
+void RiskState::ResetHand(int player) {
+    for (int i = 0; i < kNumTerrs + 2; ++i) {
+        SetCard(player, i, 0);
+    }
+}
+
+std::array<bool, kNumTerrs + 2> RiskState::GetHand(int player) const{
+    std::array<bool, kNumTerrs + 2> res = { 0 };
+    for (int i = 0; i < kNumTerrs + 2; ++i) {
+        res[i] = GetCard(player,i);
+    }
+    return res;
+}
+
+std::array<bool, (kNumTerrs + 2)> RiskState::GetCards() const {
+    std::array<bool, (kNumTerrs + 2)> res = { 0 };
+    for (int i = 0; i < kNumPlayers; ++i) {
+        auto hand = GetHand(i);
+        for (int j = 0; j < kNumTerrs + 2; ++j) {
+            res[j] = hand[j];
+        }
+    }
+    return res;
+}
+
+int RiskState::GetCardSig(int card_coord) const{
+    int arr[4] = { 2,3,5,7 };
+    for (int i = 0; i < 4; ++i) {
+        if (kCardArr[i] > card_coord) {
+            return arr[i];
+        }
+    }
+    return 0;
+}
+int RiskState::GetHandSig(int player) const {
+    auto hand = GetHand(player);
+    int res=1;
+    for (int i = 0; i <(int) hand.size(); ++i) {
+        if (hand[i] == 1) {
+            res *= GetCardSig(i);
+        }
+    }
+    return res;
+}
+int RiskState::GetHandSum(int player) const {
+    auto hand = GetHand(player);
+    int sum = 0;
+    for (int i = 0; i < (int)hand.size(); ++i) {
+        sum += hand[i];
+    }
+    return sum;
+}
+bool RiskState::GetCashable(int player) const {
+    int sig = GetHandSig(player);
+    std::array<int, 10> key_arr = { 30,42,70,105,98,147,245,125,27,8 };
+    for (int i = 0; i < 10; ++i) {
+        if (sig % key_arr[i] == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+std::array<int,3> RiskState::GetSatCards(std::array<int, 3> component_arr) const{
+    std::array<int, 3> arr = { 0 };
+    int player = GetPlayer();
+    auto hand = GetHand(player);
+    for (int i = 0; i < 3; ++i) {
+        if (component_arr[i] == 0) {
+            for (int j = 0; j < kCardArr[0]; ++j) {
+                if (GetCard(player, j) == 1) {
+                    arr[i] = j;
+                    hand[j] = 0;
+                    break;
+                }
+            }
+        }
+        else {
+            for (int j = kCardArr[component_arr[i]-1]; j < kCardArr[component_arr[i]]; ++j) {
+                if (GetCard(player, j) == 1) {
+                    arr[i] = j;
+                    hand[j] = 0;
+                    break;
+                }
+            }
+        }
+    }
+    return arr;
+}
+
+int RiskState::GetOwner(int coord) const{
+    for (int i = 0; i < kNumPlayers; ++i) {
+        if (board[i * kNumTerrs + coord] != 0) {
+            return i;
+        }
+    }
+    return kNumPlayers;
+}
+
+std::array<int,kNumTerrs> RiskState::GetTroopArr(int player) const{
+    std::array<int, kNumTerrs> res = { 0 };
+    for (int i = 0; i < kNumTerrs; ++i) {
+        if (board[kNumTerrs * player + i] > 0) {
+            res[i] = board[kNumTerrs * player + i];
+        }
+    }
+    return res;
+}
+
+std::array<bool, kNumTerrs> RiskState::GetTroopMask(int player) const{
+    std::array<bool, kNumTerrs> res = { 0 };
+    for (int i = 0; i < kNumTerrs; ++i) {
+        if (board[kNumTerrs * player + i] > 0) {
+            res[i] = 1;
+        }
+    }
+    return res;
+}
+
+int RiskState::GetEliminated(int player) const{
+    for (int i = 0; i < kNumPlayers - 1; ++i) {
+        if (board[2 * kNumPlayers * kNumTerrs + 5 + 9 + 5 * kNumTerrs + 3 * kNumPlayers +player*(kNumPlayers-1)+i] == 1) {
+            return i+1;
+        }
+    }
+    return 0;
+}
+
+int RiskState::GetMaxElim() const {
+    int max = 0;
+    for (int i = 0; i < kNumPlayers; ++i) {
+        int elim = GetEliminated(i);
+        if (elim > max) {
+            max = elim;
+        }
+    }
+    return max;
+}
+
+
+
+void RiskState::EndTurn() {
+    if (GetSucc() == 1) {
+        SetChance(1);
+    }
+    else {
+        
+        SetNextPlayer();
+        while (GetEliminated(GetPlayer()) !=0) {
+            SetNextPlayer();
+        }
+        SetDeploy();
+        Income();
+        int sum = GetHandSum(GetPlayer());
+        if (sum > 4) {
+            Cash();
+        }
+    }
+}
+
+void RiskState::Eliminate(int victim, int victor) {
+    auto victim_hand = GetHand(victim);
+    for (int i = 0; i < kNumTerrs+2; ++i) {
+        board[kNumPlayers * kNumTerrs + kNumPlayers + 5 + 9 + 5 * kNumTerrs + (kNumTerrs + 2) *victor + i ]=victim_hand[i];
+        ResetHand(victim);
+    }
+    int max = GetMaxElim();
+    board[2 * kNumPlayers * kNumTerrs + 5 + 9 + 5 * kNumTerrs + 3 * kNumPlayers + victim* (kNumPlayers - 1) + max] = 1;
+}
+
+void RiskState::Deal() {
+    int player = GetPlayer();
+    assert(GetChance()==1);
+    std::vector<int> internal_deck = {};
+    std::array<int,kNumTerrs+2> cards = GetCards();
+    for (int i = 0; i < (int)cards.size(); ++i) {
+        if (cards[i] == 0) {
+            internal_deck.push_back(i);
+        }
+    }
+    auto sig = GetHandSig(player);
+    std::random_device seed;
+    std::mt19937 gen(seed());
+    std::uniform_int_distribution<>distrib(0, internal_deck.size() - 1);
+    int choice = distrib(gen);
+    int card = internal_deck[choice];
+    SetCard(player, card, 1);
+    SetChance(0);
+    SetSucc(0);
+    EndTurn();
+}
+
+void RiskState::Cash() {
+    int player = GetPlayer();
+    assert(GetCashable(player));
+    int key = GetHandSig(player);
+    std::array<int,10> key_arr = { 30,42,70,105,98,147,245,125,27,8 };
+    std::array<std::array<int, 3>, 10> component_arr = { {{0,1,2},{0,1,3},{0,2,3},{1,2,3},{0,3,3},{1,3,3},{2,3,3},{2,2,2},{1,1,1},{0,0,0}} };
+    std::array<int, 10> troop_arr = { 10,10,10,10,10,10,10,8,6,4 };
+    int index = 0;
+    for (int i = 0; i < 10;++i) {
+        if (key % key_arr[i] == 0) {
+            index = i;
+            break;
+        }
+    }
+    int income = troop_arr[index];
+    bool bonus = false;
+    auto sat_cards = GetSatCards(component_arr[index]);
+    for (int i = 0; i < 3; ++i) {
+        if (sat_cards[i] < kNumTerrs &&bonus ==false) {
+            if (GetOwner(sat_cards[i]) == player) {
+                bonus = true;
+                IncrementTerr(sat_cards[i], player, 2);
+            }
+        }
+        SetCard(player, sat_cards[i], 0);
+
+    }
+    IncrementIncome(income);
+}
+
+void RiskState::Income() {
+    int turns = GetTurns();
+    int income = 0;
+    assert(GetIncome() == 0);
+    if (turns< kStartingTroops) {
+        income = 1;
+    }
+    else {
+        std::array<bool,kNumTerrs> troop_mask = GetTroopMask(GetPlayer());
+        int terrs = 0;
+        for (int i = 0; i < kNumTerrs; ++i) {
+            if (troop_mask[i]) {
+                terrs += 1;
+            }
+        }
+        int base = std::max((int)std::floor(terrs / 3), 3);
+        int continent_bonus = 0;
+        int ast_bonus = 0;
+        for (int i = 0; i < kNumContinents; ++i) {
+            bool sat = true;
+            for (int j = 0; j < kNumTerrs; ++j) {
+                if (!(!troop_mask[j] && kContinentMatrix[i][j])) {
+                    sat = false;
+                    break;
+                }
+            }
+            if (sat) {
+                continent_bonus += kContinentBonusArr[i];
+            }
+        }
+        if (turns == kStartingTroops) {
+            ast_bonus = kAstArr[GetPlayer()];
+        }
+        income = base + continent_bonus + ast_bonus;
+    }
+    SetIncome(income);
+}
+
+void RiskState::Deploy(int amount) {
+    int coord = GetCoord(0);
+    int player = GetPlayer();
+    IncrementTerr(coord,player, amount);
+    IncrementIncome(-amount);
+    if (GetIncome() == 0) {
+        if (GetTurns() < kStartingTroops) {
+            EndTurn();
+        }
+        else {
+            SetAttack();
+        }
+
+    }
+    else {
+        SetDeploy();
+    }
+}
+
+void RiskState::Attack() {
+    double prob_arr[6][2] = { {0.2925668724279835, 0.628343621399177},{0.3402777777777778, 1.0},{0.44830246913580246, 0.7723765432098766},{0.4212962962962963, 1.0},{0.7453703703703703, 1.0},{0.5833333333333334, 1.0} };
+    int n_atk = GetAtkNum();
+    int coord_from = GetCoord(2);
+    int coord_to = GetCoord(3);
+    int atk_player = GetPlayer();
+    int def_player = GetOwner(coord_to);
+    int n_def = board[kNumTerrs*def_player+coord_to];
+    int start_amount = n_atk;
+    while (n_atk > 0 && n_def > 0) {
+        std::random_device seed;
+        std::mt19937 gen(seed());
+        std::uniform_real_distribution<>distrib(0, 1);
+        double randnum = distrib(gen);
+        int atk_dice = std::min(3, n_atk);
+        int def_dice = std::min(2, n_def);
+        int def_losses=0;
+        switch (atk_dice * def_dice + def_dice) {
+        case 8:
+            if (randnum <= prob_arr[0][0]) {
+                def_losses = 0;
+            }
+            else if (randnum <= prob_arr[0][1]) {
+                def_losses = 1;
+            }
+            else {
+                def_losses = 2;
+            }
+            break;
+        case 6:
+            if (randnum <= prob_arr[2][0]) {
+                def_losses = 0;
+            }
+            else if (randnum <= prob_arr[2][1]) {
+                def_losses = 1;
+            }
+            else {
+                def_losses = 2;
+            }
+            break;
+        case 4:
+            if (randnum <= prob_arr[1][0]) {
+                def_losses = 0;
+            }
+            else if (randnum <= prob_arr[1][1]) {
+                def_losses = 1;
+            }
+            else {
+                def_losses = 2;
+            }
+            break;
+
+        case 3:
+            if (randnum <= prob_arr[3][0]) {
+                def_losses = 0;
+            }
+            else if (randnum <= prob_arr[3][1]) {
+                def_losses = 1;
+            }
+            else {
+                int def_losses = 2;
+            }
+            break;
+        case 2:
+            if (randnum <= prob_arr[4][0]) {
+                int def_losses = 0;
+            }
+            else if (randnum <= prob_arr[4][1]) {
+                def_losses = 1;
+            }
+            else {
+                def_losses = 2;
+            }
+            break;
+        }
+        n_def -= def_losses;
+        n_atk -= std::min(atk_dice, def_dice) - def_losses;
+    }
+    SetChance(0);
+    assert(n_def == 0 || n_atk == 0);
+    if (n_def == 0) {
+        SetTerr(coord_to, GetPlayer(), n_atk);
+        SetTerr(coord_to, def_player, 0);
+        IncrementTerr(coord_from,atk_player, -start_amount);
+        SetSucc(1);
+        SetRedistribute();
+    
+    }
+    if (n_atk == 0) {
+        SetTerr(coord_to, def_player, n_def);
+        IncrementTerr(coord_from,atk_player, -start_amount);
+        SetAttack();
+    }
+    bool def_dead = true;
+    for (int i = 0; i < kNumTerrs; ++i) {
+        if (board[kNumTerrs * def_player + i] != 0) {
+            def_dead = false;
+            break;
+        }
+    }
+    if (def_dead) {
+        Eliminate(def_player, GetPlayer());
+    }
+}
+
+void RiskState::Redistribute(int amount) {
+    int coord_from = GetCoord(3);
+    int coord_to = GetCoord(2);
+    int player = GetPlayer();
+    IncrementTerr(coord_from,player, -amount);
+    IncrementTerr(coord_to,player, amount);
+    int sum = GetHandSum(player);
+    if (sum > 5) {
+        SetDeploy();
+    }
+    else {
+        SetAttack();
+    }
+    while (sum > 5) {
+        Cash();
+        sum -= 3;
+    }
+}
+
+void RiskState::Fortify(int amount) {
+    int player = GetPlayer();
+    int coord_from = GetCoord(6);
+    int coord_to = GetCoord(7);
+    IncrementTerr(coord_to,player, amount);
+    IncrementTerr(coord_from,player, -amount);
+    EndTurn();
+}
+
+void RiskState::DepthFirstSearch(int player, int vertex,std::array<bool,kNumTerrs>* out) const{
+    (*out)[vertex]=1;
+    for (int i = 0; i < kNumTerrs;++i) {
+        if (kAdjMatrix[vertex][i] &&board[player*kNumTerrs+i]!=0&& !(*out)[i] ){
+            DepthFirstSearch(player, i, out);
+        }
+    }
+}
+
+std::vector<int> RiskState::GetAbstraction(int num,int abs) const {
+    std::vector<int> res = { 0 };
+    for (int i = 0; i < abs; ++i) {
+        if ((int)std::floor(num * (i + 1) / (abs)) > 0) {
+            //std::cout << std::to_string(std::floor(num * (i + 1) / (abs))) + "\n";
+            res.push_back(i);
+        }
+    }
+    return res;
+}
+
+int RiskState::RetAbstraction(int action,int abs) const {
+    int phse = GetPhse();
+    int num=0;
+    switch (phse) {
+    case 1:
+        num = GetIncome();
+        break;
+    case 4:
+        num = GetTroopArr(GetPlayer())[GetCoord(2)]-1;
+        break;
+    case 5:
+        num = GetTroopArr(GetPlayer())[GetCoord(3)]-1;
+        break;
+    case 8:
+        num = GetTroopArr(GetPlayer())[GetCoord(6)]-1;
+        break;
+    }
+    return (int)std::floor((action + 1) * num / abs);
+}
 
 int RiskState::CurrentPlayer() const {
   if (IsTerminal()) {
@@ -221,7 +865,6 @@ void RiskState::DoApplyAction(Action action){
 	history_.push_back(PlayerAction{ CurrentPlayer(), action_id });
 	move_number_ += 1;
 }
-
 std::vector<Action> RiskState::LegalActions() const {
 	std::vector<Action> res = {};
 	int player = GetPlayer();
@@ -277,11 +920,9 @@ std::vector<Action> RiskState::LegalActions() const {
 				}
 			}
 			res.push_back(kPhseConstants[2]);
-			std::array<bool, kNumTerrs> atk_from = { 0 };
 			for (int i = 0; i < kNumTerrs; ++i) {
 				for (int j = 0; j < kNumTerrs; ++j) {
 					if (attackable_mask[i] && anti_mask[j] && kAdjMatrix[i][j]) {
-						atk_from[i] = 1;
 						res.push_back(kPhseConstants[2] + 1 + i);
 						break;
 					}
@@ -389,19 +1030,84 @@ std::vector<Action> RiskState::LegalActions() const {
 
 bool RiskState::IsTerminal() const { return winner_ != kInvalidPlayer; }
 
-std::vector<double> RiskState::Returns() const {
-  if (!IsTerminal()) {
-    return std::vector<double>(num_players_, 0.0);
-  }
-
-  std::vector<double> returns(num_players_);
-  for (auto player = Player{0}; player < num_players_; ++player) {
-    const int bet = DidBet(player) ? 2 : 1;
-    returns[player] = (player == winner_) ? (pot_ - bet) : -bet;
-  }
-  return returns;
+std::vector<double> RiskState::Rewards() const{
+    assert(IsTerminal());
+    std::vector<double> res = { };
+    std::array<int, kNumPlayers> arr = { 0 };
+    int split = 0;
+    int split_rewards = 0;
+    for (int i = 0; i < kNumPlayers; ++i) {
+        arr[i] = GetEliminated(i);
+        if (arr[i] == 0) {
+            split_rewards += kRewards[kNumPlayers - split - 1];
+            split += 1;
+        }
+    }
+    double split_reward = (double)split_rewards / split;
+    for (int i = 0; i < kNumPlayers; ++i) {
+        if (arr[i] != 0) {
+            res.push_back( kRewards[arr[i] - 1]);
+        }
+        else {
+            res.push_back(split_reward);
+        }
+    }
+    return res;
 }
 
+std::vector<double> RiskState::Returns() const {
+    if (!IsTerminal()) {
+        std::vector<double> res = {};
+        for (int i = 0; i < kNumPlayers; ++i) {
+            res.push_back(0);
+        }
+        return res;
+    }
+    else {
+        return Rewards();
+    }
+}
+
+Player RiskState::CurrentPlayer() const{
+    if (GetChance()) {
+        return kChancePlayerId;
+    }
+    else {
+        return GetPlayer();
+    }
+}
+
+bool RiskState::IsTerminal() const{
+   if (GetMaxElim() == kNumPlayers || GetTurns() >= kMaxTurns) {
+       return true;
+   }
+   return false;
+}
+
+bool RiskState::IsChanceNode() const{
+    return(CurrentPlayer() == -1);
+}
+
+bool RiskState::IsPlayerNode() const {
+    return (CurrentPlayer() >= 0);
+}
+
+ActionsAndProbs RiskState::ChanceOutcomes() const {
+    return ActionsAndProbs{ std::make_pair(kPhseConstants[9], 1) };
+}
+
+std::vector<Action> RiskState::LegalChanceOutcomes() const{
+    if (IsChanceNode()) {
+        return { kPhseConstants[9] };
+   }
+    else {
+        return {};
+    }
+}
+
+std::unique_ptr<RiskState> RiskState::Clone() const {
+    return std::unique_ptr<RiskState>(new RiskState(*this));
+}
 
 void RiskState::ObservationTensor(Player player,
                                   absl::Span<float> values) const {
@@ -410,26 +1116,10 @@ void RiskState::ObservationTensor(Player player,
   game.default_observer_->WriteTensor(*this, player, &allocator);
 }
 
-std::unique_ptr<State> RiskState::Clone() const {
-  return std::unique_ptr<State>(new RiskState(*this));
-}
-
-
-std::vector<std::pair<Action, double>> RiskState::ChanceOutcomes() const {
-  SPIEL_CHECK_TRUE(IsChanceNode());
-  std::vector<std::pair<Action, double>> outcomes;
-  const double p = 1.0 / (num_players_ + 1 - history_.size());
-  for (int card = 0; card < card_dealt_.size(); ++card) {
-    if (card_dealt_[card] == kInvalidPlayer) outcomes.push_back({card, p});
-  }
-  return outcomes;
-}
 
 
 RiskGame::RiskGame(const GameParameters& params)
     : Game(kGameType, params), num_players_(ParameterValue<int>("players")) {
-  SPIEL_CHECK_GE(num_players_, kGameType.min_num_players);
-  SPIEL_CHECK_LE(num_players_, kGameType.max_num_players);
   default_observer_ = std::make_shared<RiskObserver>(kDefaultObsType);
   info_state_observer_ = std::make_shared<RiskObserver>(kInfoStateObsType);
   private_observer_ = std::make_shared<RiskObserver>(

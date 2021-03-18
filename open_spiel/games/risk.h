@@ -114,7 +114,6 @@ class RiskState : public State {
   bool GetCard(int player, int card_coord) const;//gets the players card entry;
   void ResetHand(int player);//sets all player's cards to 0;
   std::array<bool, kNumTerrs + 2> GetHand(int player) const;//Gets all the player's cards;
-  std::array<bool, (kNumTerrs + 2)* kNumPlayers> GetHands() const;//Gets all the players's hands;
   std::array<bool, kNumTerrs + 2> GetCards() const;//Gets all the cards in all the players's hands;
   int GetCardSig(int card_coord) const;//Gets a cards prime signature(for cashing);
   int GetHandSig(int player) const;//Gets the product of all the cardsigs in player's hand;
@@ -179,7 +178,6 @@ class RiskGame : public Game {
 
   // Used to implement the old observation API.
   std::shared_ptr<KuhnObserver> default_observer_;
-  std::shared_ptr<KuhnObserver> info_state_observer_;
   std::shared_ptr<KuhnObserver> public_observer_;
   std::shared_ptr<KuhnObserver> private_observer_;
 

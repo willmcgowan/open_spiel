@@ -1114,6 +1114,13 @@ std::vector<Action> RiskState::LegalChanceOutcomes() const{
     }
 }
 
+void RiskState::ObservationTensor(Player player,
+                                  absl::Span<float> values) const {
+  ContiguousAllocator allocator(values);
+  const RiskGame& game = open_spiel::down_cast<const RiskGame&>(*game_);
+  game.default_observer_->WriteTensor(*this, player, &allocator);
+}
+
 std::unique_ptr<RiskState> RiskState::Clone() const {
     return std::unique_ptr<RiskState>(new RiskState(*this));
 }
@@ -1130,7 +1137,6 @@ void RiskState::ObservationTensor(Player player,
 RiskGame::RiskGame(const GameParameters& params)
     : Game(kGameType, params), num_players_(ParameterValue<int>("players")) {
   default_observer_ = std::make_shared<RiskObserver>(kDefaultObsType);
-  info_state_observer_ = std::make_shared<RiskObserver>(kInfoStateObsType);
   private_observer_ = std::make_shared<RiskObserver>(
       IIGObservationType{.public_info = false,
                          .perfect_recall = false,
@@ -1150,7 +1156,7 @@ std::vector<int> RiskGame::ObservationTensorShape() const {
   // One-hot encoding for the single private card. (n+1 cards = n+1 bits)
   // Followed by the contribution of each player to the pot (n).
   // n + n + 1 + n = 3n + 1.
-  return {3 * num_players_ + 1};
+  return {2*kNumPlayers*kNumTerrs+5*kNumTerrs+2*kNumPlayers+kNumPlayers*kNumPlayers+14};
 }
 
 double RiskGame::MaxUtility() const {

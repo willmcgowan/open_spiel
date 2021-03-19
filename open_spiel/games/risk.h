@@ -36,6 +36,22 @@
 // Parameters:
 // none rn because am stupid but maybe later all the varst that are used as constants like ast_vect and the map could be params; bn  
 
+//current documentation on form of board attribute ie the world state//
+//[0:kNumPlayers*kNumTerrs]=player troops
+//[kNumPlayers*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers]=whose turn it is
+//[kNumPlayers*kNumTerrs+kNumPlayers]=turns elapsed
+//[kNumPlayers*kNumTerrs+kNumPlayers+1:kNumPlayers*kNumTerrs+kNumPlayers+1+phses]=cur_phse
+//[kNumPlayers*kNumTerrs+kNumPlayers+1+phses]= is chance node
+//[kNumPlayers*kNumTerrs+kNumPlayers+2+phses]=current troop income
+//[kNumPlayers*kNumTerrs+kNumPlayers+3+phses:kNumPlayers*kNumTerrs+kNumPlayers+3+phses+kNumTerrs]=dep to
+//[kNumPlayers*kNumTerrs+kNumPlayers+3+phses+kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+3+phses+2*kNumTerrs]=atk from
+//[kNumPlayers*kNumTerrs+kNumPlayers+3+phses+2*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+3+phses+3*kNumTerrs]=atk to
+//[kNumPlayers*kNumTerrs+kNumPlayers+3+phses+3*kNumTerrs]=atk amount
+//[kNumPlayers*kNumTerrs+kNumPlayers+4+phses+3*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+4+phses+4*kNumTerrs]=fort from
+//[kNumPlayers*kNumTerrs+kNumPlayers+4+phses+4*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+4+phses+5*kNumTerrs]=fort to
+//[kNumPlayers*kNumTerrs+kNumPlayers+4+phses+5*kNumTerrs]= succ atk
+//[kNumPlayers*kNumTerrs+kNumPlayers+5+phses+5*kNumTerrs:2*kNumPlayers*kNumTerrs+5+phses+5*kNumTerrs+3*kNumPlayers]=cards
+//[2*kNumPlayers*kNumTerrs+5+phses+5*kNumTerrs+3*kNumPlayers:2*kNumPlayers*kNumTerrs+5+phses+5*kNumTerrs+3*kNumPlayers+kNumPlayers(kNumPlayers-1)]=death array note this might need to be modified for the obs as it is a mixture of categorical and ordinal rep
 namespace open_spiel {
 namespace risk {
 

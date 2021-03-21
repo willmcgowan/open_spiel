@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "open_spiel/policy.h"
 #include "open_spiel/spiel.h"
@@ -89,28 +90,8 @@ namespace risk {
     const std::array<int, 6> ClassicContinentBonusArr = { 2, 7, 5, 2, 3, 5 };
     const std::array<int, 4> ClassicCardArr = { 14,28,42,44 };
     const std::array<std::string, 42> ClassicTerrNames = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
-    const int kNumTerrs = ClassicNumTerrs;
-    const int kNumContinents = 6;
-    const int kNumPlayers = 6;
-    std::array<bool, kNumTerrs> AdjMatrixer(std::vector<int> v);
-    std::array<bool, kNumContinents> ContinentMatrixer(std::vector<int> v);
-    const kAdjMatrix = AdjMatrixer(ClassicAdjVect);
-    const kContinentMatrix = ContinentMatrixer(ClassicContinentVect);
-    const std::array<int, kNumPlayers> kAstArr = { 0,0,0,1,2,3 };
-    const std::array<int, kNumPlayers> kRewards = { -1,-1,-1,0,1,2 };
-    const bool kDepAbs = false;
-    const bool kAtkAbs = false;
-    const bool kRedistAbs = false;
-    const bool kFortAbs = false;
-    const int kDepMax = 31;
-    const int kAtkMax = 1000;
-    const int kRedistMax = 1000;
-    const int kFortMax = 1000;
-    const std::array<int, 10> kPhseConstants = { 0,kNumTerrs + 1,kNumTerrs + 1 + kDepMax,2 * kNumTerrs + 2 + kDepMax,3 * kNumTerrs + 2 + kDepMax,3 * kNumTerrs + 2 + kDepMax + kAtkMax,3 * kNumTerrs + 3 + kDepMax + kAtkMax + kRedistMax,4 * kNumTerrs + 4 + kDepMax + kAtkMax + kRedistMax,5 * kNumTerrs + 4 + kDepMax + kAtkMax + kRedistMax,5 * kNumTerrs + 4 + kDepMax + kAtkMax + kRedistMax + kFortMax };
-    const int kMaxGameLength = 10000;
-    const int kMaxChanceNodesInHistory = 1000;
 
-enum ActionType { kPass = 0, kBet = 1 };
+
 
 class RiskGame;
 class RiskObserver;
@@ -199,8 +180,8 @@ class RiskState : public State {
   std::vector<int> rewards;
   std::vector<int> assist;
   std::array<int, 2 * kNumPlayers * kNumTerrs + 14 + 2 * kNumPlayers + kNumPlayers * kNumPlayers + 5 * kNumTerrs> board;
-  std::array<std::array<bool,num_terrs>,num_terrs> adj_matrix;
-  std::array<std::array<bool, num_terrs>, num_terrs> cont_matrix;
+  std::array<std::array<bool,num_terrs_>,num_terrs_> adj_matrix;
+  std::array<std::array<bool, num_terrs_>, num_terrs_> cont_matrix;
   std::array<int, num_continents> cont_bonus;
   std::array<int, 4> card_arr;
   std::array<bool, 4> abstraction;

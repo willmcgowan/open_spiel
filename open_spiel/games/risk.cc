@@ -31,183 +31,184 @@
 
 //might need to change the current chance action id to zero etc for reasons//
 namespace open_spiel {
-namespace risk {
-namespace {
+    namespace risk {
+        namespace {
 
-// Default parameters.
-constexpr int kDefaultPlayers = 2;
-constexpr int kDefaultMap = 1;
-constexpr int kDefaultMaxTurns = 90;   
-constexpr std::vector<int> kDefaultRewards = { -1,1 };
-constexpr std::vector<int> kDefaultAssist = { 0,3 };
-constexpr std::vector<bool> kDefaultAbstraction = { false,false,false,false };
-constexpr std::vector<int> kDefaultAbstractionQ = { 55,1000,1000,1000 };
+            // Default parameters.
+            constexpr int kDefaultPlayers = 2;
+            constexpr int kDefaultMap = 1;
+            constexpr int kDefaultMaxTurns = 90;
+            constexpr std::vector<int> kDefaultRewards = { -1,1 };
+            constexpr std::vector<int> kDefaultAssist = { 0,3 };
+            constexpr std::vector<bool> kDefaultAbstraction = { false,false,false,false };
+            constexpr std::vector<int> kDefaultAbstractionQ = { 55,1000,1000,1000 };
 
 
 
-//couldnt get these to work with templates so here is this ugly stupid code//
-std::array<std::array<bool, 19>, 19> SimpleAdjMatrixer(std::vector<std::vector<int>>dict) {
-    std::array<std::array<bool, 19>, 19> res = {0}
-    for (int i = 0; i < dict.size(); ++i) {
-        for (int j = 0; j < dict[i].size(); ++j) {
-            res[i][dict[i][j]] == 1;
+            //couldnt get these to work with templates so here is this ugly stupid code//
+            std::array<std::array<bool, 19>, 19> SimpleAdjMatrixer(std::vector<std::vector<int>>dict) {
+                std::array<std::array<bool, 19>, 19> res = { 0 }
+                for (int i = 0; i < dict.size(); ++i) {
+                    for (int j = 0; j < dict[i].size(); ++j) {
+                        res[i][dict[i][j]] == 1;
+                    }
+                }
+                return res;
+            }
+            std::array<std::array<bool, 42>, 42> ClassicAdjMatrixer(std::vector<std::vector<int>>dict) {
+                std::array<std::array<bool, 42>, 42> res = { 0 }
+                for (int i = 0; i < dict.size(); ++i) {
+                    for (int j = 0; j < dict[i].size(); ++j) {
+                        res[i][dict[i][j]] == 1;
+                    }
+                }
+                return res;
+            }
+
+            std::array<std::array<bool, 19>, 6> SimpleContMatrixer(std::vector<std::vector<int>>dict) {
+                std::array<std::array<bool, 19>, 6> res = { 0 };
+                for (int i = 0; i < dict.size(); ++i) {
+                    for (int j = 0; j < dict[i].size(); ++j) {
+                        res[i][dict[i][j]] == 1;
+                    }
+                }
+                return res;
+            }
+            std::array<std::array<bool, 42>, 6> ClassicContMatrixer(std::vector<std::vector<int>>dict) {
+                std::array<std::array<bool, 42>, 6> res = { 0 };
+                for (int i = 0; i < dict.size(); ++i) {
+                    for (int j = 0; j < dict[i].size(); ++j) {
+                        res[i][dict[i][j]] == 1;
+                    }
+                }
+                return res;
+            }
+
+
+
+            // Facts about the game
+            const GameType kGameType{/*short_name=*/"risk",
+                /*long_name=*/"Risk",
+                GameType::Dynamics::kSequential,
+                GameType::ChanceMode::kSampledStochastic,
+                GameType::Information::kImperfectInformation,
+                GameType::Utility::kZeroSum,
+                GameType::RewardModel::kTerminal,
+                /*max_num_players=*/2,
+                /*min_num_players=*/6,
+                /*provides_information_state_string=*/false,
+                /*provides_information_state_tensor=*/false,
+                /*provides_observation_string=*/false,
+                /*provides_observation_tensor=*/true,
+                /*parameter_specification=*/
+                 {{"players", GameParameter(kDefaultPlayers)},{"map",GameParameter(kDefaultMap)},{"max_turns",GameParameter(kDefaultMaxTurns)},{"rewards",GameParameter(kDefaultRewards)},{"assist",GameParameter(kDefaultAssist)},{"abstraction",GameParameter(kDefaultAbstraction)},{"action_q",GameParameter(kDefaultActionQ}},
+                     /*default_loadable=*/true,
+                     /*provides_factored_observation_string=*/false,
+                     };
+
+            std::shared_ptr<const Game> Factory(const GameParameters& params) {
+                return std::shared_ptr<const Game>(new RiskGame(params));
+            }
+
+            REGISTER_SPIEL_GAME(kGameType, Factory);
+        }  // namespace
+
+        class RiskObserver : public Observer {
+        public:
+            RiskObserver(IIGObservationType iig_obs_type)
+                : Observer(/*has_string=*/false, /*has_tensor=*/true),
+                iig_obs_type_(iig_obs_type) {}
+
+            void WriteTensor(const State& observed_state, int player,
+                Allocator* allocator) const override {
+                const RiskState& state =
+                    open_spiel::down_cast<const RiskState&>(observed_state);
+                SPIEL_CHECK_GE(player, 0);
+                SPIEL_CHECK_LT(player, state.num_players_);
+                const int num_players = state.num_players_;
+                const int num_terrs = state.num_terrs_;
+
+                if (iig_obs_type_.private_info == PrivateInfoType::kSinglePlayer) {
+                    // The player's card, if one has been dealt.
+                        auto out = allocator->Get("private_cards", { num_terrs + 2 });
+                        auto hand = state.GetHand(player);
+                        for (int i = 0; i < num_terrs + 2; ++i) {
+                            out.at(i) = hand[i];
+                        }
+                    }
+
+                    // Betting sequence.
+                if (iig_obs_type_.public_info) {
+                    if (!iig_obs_type_.perfect_recall) {
+                        auto out = allocator->Get("board", { num_players * num_terrs + 2 * num_players + 13 + 5 * num_terrs + num_players * (num_players - 1) });
+                        std::array<int, 2 * num_players * num_terrs + 5 * num_terrs + 2 * num_players + num_players * num_players + 14> board = state.Board();
+                        for (int i = 0; i < num_players * num_terrs + num_players + 14 + 5 * num_terrs; ++i) {
+                            out.at(i) = board[i];
+                        }
+                        for (int i = 0; i < num_players; ++i) {
+                            out.at(i + num_players * num_terrs + num_players + 14 + 5 * num_terrs) = state.GetHandSum(i);
+                        }
+                        for (int i = 0; i < num_players * (num_players - 1); ++i) {
+                            out.at(i + num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs) = board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players];
+                        }
+                    }
+                }
+            }
+
+        private:
+            IIGObservationType iig_obs_type_;
+            };
+
+        RiskState::RiskState(std::shared_ptr<const Game> game)
+            : State(game),
+            num_terrs_(game->NumTerrs()),
+            rewards(game->Rewards()),
+            assist(game->Assist()),
+            abstraction(game->Abstraction()),
+            action_q(game->ActionQ()) {
+            switch (num_players_) {
+            case 2:
+                starting_troops = 40;
+                break;
+            case 3:
+                starting_troops = 35;
+                break;
+            case 4:
+                starting_troops = 30;
+                break;
+            case 5:
+                starting_troops = 25;
+                break;
+            case 6:
+                starting_troops = 20;
+                break;
+            }
+            std::array<int, 2 * num_players_ * num_terrs_ + 5 * num_terrs_ + 2 * num_players_ + num_players_ * num_players_ + 14> board = { 0 };
+            std::array<std::array<bool, num_terrs_>, 6> cont_matrix = ContMatrixer(std::vector < std::vector<int>>)
+                if (game->map_type_ == 0) {
+                    card_arr = ClassicCardArr;
+                    adj_matrix = std::array<std::array<bool, num_terrs_>, num_terrs_> ClassicAdjMatrixer(std::vector<std::vector<int>>ClassicAdjVect);
+                    std::array<std::array<bool, num_terrs_>, 6> cont_matrix = ClassicContMatrixer(std::vector<std::vector<int>>ClassicContVect);
+                    cont_bonus = ClassicContBonus;
+                }
+                else if (game->map_type_ == 1) {
+                    card_arr = SimpleCardArr;
+                    adj_matrix = std::array<std::array<bool, num_terrs_>, num_terrs_> SimpleAdjMatrixer(std::vector<std::vector<int>>SimpleAdjVect);
+                    cont_matrix = std::array<std::array<bool, num_terrs_>, 6>SimpleContMatrixer(std::vector<std::vector<int>>SimpleContVect);
+                    cont_bonus = SimpleContBonus;
+                }
+            std::array<int, 10> phse_constants = { 0,num_terrs_ + 1,num_terrs_ + 1 + action_q[0],2 * num_terrs_ + 2 + action_q[0],3 * num_terrs_ + 2 + action_q[0], 3 * num_terrs_ + 2 + action_q[0] + action_q[1], 3 * num_terrs_ + 3 + action_q[0] + action_q[1] + action_q[2], 4 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2], 5 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2], 5 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2] + action_q[3] };
+            SetIncome(1);
+            SetPlayer(0);
+            SetPhse(0);
         }
-    }
-    return res;
-}
-std::array<std::array<bool, 42>, 42> ClassicAdjMatrixer(std::vector<std::vector<int>>dict) {
-    std::array<std::array<bool, 42>, 42> res = { 0 }
-    for (int i = 0; i < dict.size(); ++i) {
-        for (int j = 0; j < dict[i].size(); ++j) {
-            res[i][dict[i][j]] == 1;
-        }
-    }
-    return res;
-}
-
-std::array<std::array<bool, 19>, 6> SimpleContMatrixer(std::vector<std::vector<int>>dict) {
-    std::array<std::array<bool, 19>, 6> res = { 0 };
-    for (int i = 0; i < dict.size(); ++i) {
-        for (int j = 0; j < dict[i].size(); ++j) {
-            res[i][dict[i][j]] == 1;
-        }
-    }
-    return res;
-}
-std::array<std::array<bool, 42>, 6> ClassicContMatrixer(std::vector<std::vector<int>>dict) {
-    std::array<std::array<bool, 42>, 6> res = { 0 };
-    for (int i = 0; i < dict.size(); ++i) {
-        for (int j = 0; j < dict[i].size(); ++j) {
-            res[i][dict[i][j]] == 1;
-        }
-    }
-    return res;
-}
-
-
-
-// Facts about the game
-const GameType kGameType{/*short_name=*/"risk",
-                         /*long_name=*/"Risk",
-                         GameType::Dynamics::kSequential,
-                         GameType::ChanceMode::kSampledStochastic,
-                         GameType::Information::kImperfectInformation,
-                         GameType::Utility::kZeroSum,
-                         GameType::RewardModel::kTerminal,
-                         /*max_num_players=*/2,
-                         /*min_num_players=*/6,
-                         /*provides_information_state_string=*/false,
-                         /*provides_information_state_tensor=*/false,
-                         /*provides_observation_string=*/false,
-                         /*provides_observation_tensor=*/true,
-                         /*parameter_specification=*/
-                          {{"players", GameParameter(kDefaultPlayers)},{"map",GameParameter(kDefaultMap)},{"max_turns",GameParameter(kDefaultMaxTurns)},{"rewards",GameParameter(kDefaultRewards)},{"assist",GameParameter(kDefaultAssist)},{"abstraction",GameParameter(kDefaultAbstraction)},{"action_q",GameParameter(kDefaultActionQ}},
-                         /*default_loadable=*/true,
-                         /*provides_factored_observation_string=*/false,
-                        };
-
-std::shared_ptr<const Game> Factory(const GameParameters& params) {
-  return std::shared_ptr<const Game>(new RiskGame(params));
-}
-
-REGISTER_SPIEL_GAME(kGameType, Factory);
-}  // namespace
-
-class RiskObserver : public Observer {
- public:
-  RiskObserver(IIGObservationType iig_obs_type)
-      : Observer(/*has_string=*/false, /*has_tensor=*/true),
-        iig_obs_type_(iig_obs_type) {}
-
-  void WriteTensor(const State& observed_state, int player,
-                   Allocator* allocator) const override {
-    const RiskState& state =
-        open_spiel::down_cast<const RiskState&>(observed_state);
-    SPIEL_CHECK_GE(player, 0);
-    SPIEL_CHECK_LT(player, state.num_players_);
-    const int num_players = state.num_players_;
-    const int num_cards = num_players + 1;
-
-    if (iig_obs_type_.private_info == PrivateInfoType::kSinglePlayer) {
-      {  // Observing player.
-        auto out = allocator->Get("player", {num_players});
-        out.at(player) = 1;
-      }
-      {  // The player's card, if one has been dealt.
-        auto out = allocator->Get("private_card", {num_cards});
-        if (state.history_.size() > player)
-          out.at(state.history_[player].action) = 1;
-      }
-    }
-
-    // Betting sequence.
-    if (iig_obs_type_.public_info) {
-      if (iig_obs_type_.perfect_recall) {
-        auto out = allocator->Get("betting", {2 * num_players - 1, 2});
-        for (int i = num_players; i < state.history_.size(); ++i) {
-          out.at(i - num_players, state.history_[i].action) = 1;
-        }
-      } else {
-        auto out = allocator->Get("pot_contribution", {num_players});
-        for (auto p = Player{0}; p < state.num_players_; p++) {
-          out.at(p) = state.ante_[p];
-        }
-      }
-    }
-  }
-
- private:
-  IIGObservationType iig_obs_type_;
-};
-
-RiskState::RiskState(std::shared_ptr<const Game> game)
-    : State(game),
-    num_terrs_(game->NumTerrs()),
-    rewards(game->Rewards()),
-    assist(game->Assist()),
-    abstraction(game->Abstraction()),
-    action_q(game->ActionQ()){
-    switch (num_players_) {
-    case 2:
-        starting_troops = 40;
-        break;
-    case 3:
-        starting_troops = 35;
-        break;
-    case 4:
-        starting_troops = 30;
-        break;
-    case 5:
-        starting_troops = 25;
-        break;
-    case 6:
-        starting_troops = 20;
-        break;
-    }
-    std::array<int, 2 * num_players_ * num_terrs_ + 5 * num_terrs_ + 2 * num_players_ + num_players_ * num_players_ + 14> board = { 0 };
-    std::array<std::array<bool, num_terrs_>, 6> cont_matrix = ContMatrixer(std::vector < std::vector<int>>)
-    if(game->map_type_ == 0){
-        card_arr = ClassicCardArr;
-        adj_matrix = std::array<std::array<bool, num_terrs_>, num_terrs_> ClassicAdjMatrixer(std::vector<std::vector<int>>ClassicAdjVect);
-        std::array<std::array<bool, num_terrs_>, 6> cont_matrix =ClassicContMatrixer(std::vector<std::vector<int>>ClassicContVect);
-        cont_bonus = ClassicContBonus;
-    }
-    else if (game->map_type_ == 1) {
-        card_arr = SimpleCardArr;
-        adj_matrix = std::array<std::array<bool, num_terrs_>, num_terrs_> SimpleAdjMatrixer(std::vector<std::vector<int>>SimpleAdjVect);
-        cont_matrix = std::array<std::array<bool, num_terrs_>, 6>SimpleContMatrixer(std::vector<std::vector<int>>SimpleContVect);
-        cont_bonus = SimpleContBonus;
-    }
-    std::array<int, 10> phse_constants = { 0,num_terrs_ + 1,num_terrs_ + 1 + action_q[0],2 * num_terrs_ + 2 + action_q[0],3 * num_terrs_ + 2 + action_q[0], 3 * num_terrs_ + 2 + action_q[0] + action_q[1], 3 * num_terrs_ + 3 + action_q[0] + action_q[1] + action_q[2], 4 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2], 5 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2], 5 * num_terrs_ + 4 +action_q[0] + action_q[1] + action_q[2] +action_q[3] };
-    SetIncome(1);
-    SetPlayer(0);
-    SetPhse(0);
-}
-        
 
 
       // How much each player has contributed to the pot, indexed by pid.
-      ante_(game->NumPlayers(), kAnte) {}
+
+std::array<int, 2 * num_players_ * num_terrs_ + 5 * num_terrs_ + 2 * num_players_ + num_players_ * num_players_ + 14> RiskState::Board() {
+     return board;
+}
 
 void RiskState::ResetPlayer() {
     for (int i = 0; i < num_players_; ++i) {

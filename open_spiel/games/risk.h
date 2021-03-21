@@ -52,6 +52,27 @@
 //[kNumPlayers*kNumTerrs+kNumPlayers+4+phses+5*kNumTerrs]= succ atk
 //[kNumPlayers*kNumTerrs+kNumPlayers+5+phses+5*kNumTerrs:2*kNumPlayers*kNumTerrs+5+phses+5*kNumTerrs+3*kNumPlayers]=cards
 //[2*kNumPlayers*kNumTerrs+5+phses+5*kNumTerrs+3*kNumPlayers:2*kNumPlayers*kNumTerrs+5+phses+5*kNumTerrs+3*kNumPlayers+kNumPlayers(kNumPlayers-1)]=death array note this might need to be modified for the obs as it is a mixture of categorical and ordinal rep
+
+
+//default observation ie including private and public info
+//0:kNumPlayers*kNumTerrs]=player troops
+//[kNumPlayers*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers]=whose turn it is
+//[kNumPlayers*kNumTerrs+kNumPlayers]=turns elapsed
+//[kNumPlayers*kNumTerrs+kNumPlayers+1:kNumPlayers*kNumTerrs+kNumPlayers+10]=cur_phse
+//[kNumPlayers*kNumTerrs+kNumPlayers+10]= is chance node
+//[kNumPlayers*kNumTerrs+kNumPlayers+11]=current troop income
+//[kNumPlayers*kNumTerrs+kNumPlayers+12:kNumPlayers*kNumTerrs+kNumPlayers+12+kNumTerrs]=dep to
+//[kNumPlayers*kNumTerrs+kNumPlayers+12+kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+12+2*kNumTerrs]=atk from
+//[kNumPlayers*kNumTerrs+kNumPlayers+12+2*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+12+3*kNumTerrs]=atk to
+//[kNumPlayers*kNumTerrs+kNumPlayers+12+3*kNumTerrs]=atk amount
+//[kNumPlayers*kNumTerrs+kNumPlayers+13+3*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+13+4*kNumTerrs]=fort from
+//[kNumPlayers*kNumTerrs+kNumPlayers+13+4*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+13+5*kNumTerrs]=fort to
+//[kNumPlayers*kNumTerrs+kNumPlayers+13+5*kNumTerrs]= succ atk
+//[kNumPlayers*kNumTerrs+kNumPlayers+14+5*kNumTerrs:kNumPlayers*kNumTerrs+kNumPlayers+16+6*kNumTerrs] = private cards
+//[kNumPlayers*kNumTerrs+kNumPlayers+16+6*kNumTerrs:kNumPlayers*kNumTerrs+2*kNumPlayers+16+6*kNumTerrs]= cards total(public)
+//[kNumPlayers*kNumTerrs+2*kNumPlayers+16+6*kNumTerrs:kNumPlayers*kNumTerrs+2*kNumPlayers+16+6*kNumTerrs+kNumPlayers(kNumPlayers-1)]=death_arr
+
+
 namespace open_spiel {
 namespace risk {
 

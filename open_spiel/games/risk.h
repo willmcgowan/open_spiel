@@ -131,16 +131,16 @@ class RiskState : public State {
   void SetCard(int player, int card_coord, int amount);//sets the players card entry to amount;
   bool GetCard(int player, int card_coord) const;//gets the players card entry;
   void ResetHand(int player);//sets all player's cards to 0;
-  std::array<bool, kNumTerrs + 2> GetHand(int player) const;//Gets all the player's cards;
-  std::array<bool, kNumTerrs + 2> GetCards() const;//Gets all the cards in all the players's hands;
+  std::array<bool, num_terrs_ + 2> GetHand(int player) const;//Gets all the player's cards;
+  std::array<bool, num_terrs_ + 2> GetCards() const;//Gets all the cards in all the players's hands;
   int GetCardSig(int card_coord) const;//Gets a cards prime signature(for cashing);
   int GetHandSig(int player) const;//Gets the product of all the cardsigs in player's hand;
   int GetHandSum(int player) const;//gets the amount of cards in player's hand;
   bool GetCashable(int player) const;//is player's hand cashable;
   std::array<int, 3> GetSatCards(std::array<int, 3> component_arr) const;//returns the cards to be cashed;
   int GetOwner(int coord) const;//returns the owner of a territory;
-  std::array<int, kNumTerrs> GetTroopArr(int player) const;//returns player's troop entries;
-  std::array<bool, kNumTerrs> GetTroopMask(int player) const;//returns all player's troop entries;
+  std::array<int, num_terrs_> GetTroopArr(int player) const;//returns player's troop entries;
+  std::array<bool, num_terrs_> GetTroopMask(int player) const;//returns all player's troop entries;
   int GetEliminated(int player) const;//if player is not eliminated returns 0, else returns when they were eliminated ie first second third etc;
   int GetMaxElim() const;//returns the highest elim value ie how many players have been eliminated;
   void EndTurn();//ends player's turn;
@@ -152,7 +152,7 @@ class RiskState : public State {
   void Attack();//handles the attack process which is random;
   void Redistribute(int amount);//redistributes the amount from where they attacked to to where they attacked from if they so chose;
   void Fortify(int amount);//fortifies the amount from where they fort_from and to fort_to, then ends their turn;
-  void DepthFirstSearch(int player, int vertex, std::array<bool, kNumTerrs>* out) const;//is a depth first search to find if a fort to is legal
+  void DepthFirstSearch(int player, int vertex, std::array<bool, num_terrs_>* out) const;//is a depth first search to find if a fort to is legal
   std::vector<int> GetAbstraction(int num, int abs) const;//pretty hacky way to abstract actions;
   int RetAbstraction(int action, int abs) const;//given an action returns what it represents;
 

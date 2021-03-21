@@ -128,6 +128,8 @@ set(GAME_SOURCES
   trade_comm.h
   y.cc
   y.h
+  risk.cc
+  risk.h
 )
 
 if (${BUILD_WITH_HANABI})
@@ -447,6 +449,11 @@ add_test(tiny_hanabi_test tiny_hanabi_test)
 add_executable(trade_comm_test trade_comm_test.cc ${OPEN_SPIEL_OBJECTS}
                $<TARGET_OBJECTS:tests>)
 add_test(trade_comm_test trade_comm_test)
+
+add_executable(risk_test risk_test.cc ${OPEN_SPIEL_OBJECTS}
+               $<TARGET_OBJECTS:tests>
+               $<TARGET_OBJECTS:algorithms>)
+add_test(risk_test risk_test)
 
 if (${BUILD_WITH_ACPC})
   add_executable(universal_poker_test universal_poker_test.cc ${OPEN_SPIEL_OBJECTS}

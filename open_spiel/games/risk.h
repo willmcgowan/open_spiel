@@ -119,6 +119,7 @@ class RiskState : public State {
  public:
   
   //internal methods//
+  std::array<int, 2 * num_players_ * num_terrs_ + 5 * num_terrs_ + 2 * num_players_ + num_players_ * num_players_ + 14 > Board();
   void ResetPlayer();//sets the current player entries in the board array to all zero;
   void SetPlayer(Player player);//sets the player entry in the board array to one;
   void SetNextPlayer();//sets the present player entry to 0 and sets the next(consecutive player) entry to one;

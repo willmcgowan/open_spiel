@@ -197,13 +197,7 @@ namespace open_spiel {
                     cont_matrix = std::array<std::array<bool, num_terrs_>, 6>SimpleContMatrixer(std::vector<std::vector<int>>SimpleContVect);
                     cont_bonus = SimpleContBonus;
                 }
-            std::array<int, 10> phse_constants = { 0,num_terrs_ + 1,num_terrs_ + 1 + action_q[0],2 * num_terrs_ + 2 + action_q[0],3 * num_terrs_ + 2 + action_q[0], 3 * num_terrs_ + 2 + action_q[0] + action_q[1], 3 * num_terrs_ + 3 + action_q[0] + action_q[1] + action_q[2], 4 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2], 5 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2], 5 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2] + action_q[3] };
-            SetIncome(1);
-            SetPlayer(0);
-            SetPhse(0);
-        }
-
-
+            std::array<int, 9> phse_constants = { 0,num_terrs_ + 1,num_terrs_ + 1 + action_q[0],2 * num_terrs_ + 2 + action_q[0],3 * num_terrs_ + 2 + action_q[0], 3 * num_terrs_ + 2 + action_q[0] + action_q[1], 3 * num_terrs_ + 3 + action_q[0] + action_q[1] + action_q[2], 4 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2] };
       // How much each player has contributed to the pot, indexed by pid.
 
 std::array<int, 2 * num_players_ * num_terrs_ + 5 * num_terrs_ + 2 * num_players_ + num_players_ * num_players_ + 14> RiskState::Board() {
@@ -628,7 +622,7 @@ void RiskState::Income() {
     int turns = GetTurns();
     int income = 0;
     assert(GetIncome() == 0);
-    if (turns< kStartingTroops) {
+    if (turns< starting_troops) {
         income = 1;
     }
     else {
@@ -642,20 +636,20 @@ void RiskState::Income() {
         int base = std::max((int)std::floor(terrs / 3), 3);
         int continent_bonus = 0;
         int ast_bonus = 0;
-        for (int i = 0; i < kNumContinents; ++i) {
+        for (int i = 0; i < 6; ++i) {
             bool sat = true;
             for (int j = 0; j < num_terrs_; ++j) {
-                if (!(!troop_mask[j] && kContinentMatrix[i][j])) {
+                if (!(!troop_mask[j] && cont_matrix[i][j])) {
                     sat = false;
                     break;
                 }
             }
             if (sat) {
-                continent_bonus += kContinentBonusArr[i];
+                continent_bonus += cont_bonus[i];
             }
         }
-        if (turns == kStartingTroops) {
-            ast_bonus = kAstArr[GetPlayer()];
+        if (turns == starting_troops) {
+            ast_bonus = assist[GetPlayer()];
         }
         income = base + continent_bonus + ast_bonus;
     }
@@ -668,7 +662,7 @@ void RiskState::Deploy(int amount) {
     IncrementTerr(coord,player, amount);
     IncrementIncome(-amount);
     if (GetIncome() == 0) {
-        if (GetTurns() < kStartingTroops) {
+        if (GetTurns() < starting_troops) {
             EndTurn();
         }
         else {
@@ -817,7 +811,7 @@ void RiskState::Fortify(int amount) {
 void RiskState::DepthFirstSearch(int player, int vertex,std::array<bool,num_terrs_>* out) const{
     (*out)[vertex]=1;
     for (int i = 0; i < num_terrs_;++i) {
-        if (kAdjMatrix[vertex][i] &&board[player*num_terrs_+i]!=0&& !(*out)[i] ){
+        if (adj_matrix[vertex][i] &&board[player*num_terrs_+i]!=0&& !(*out)[i] ){
             DepthFirstSearch(player, i, out);
         }
     }
@@ -866,7 +860,7 @@ int RiskState::CurrentPlayer() const {
 void RiskState::DoApplyAction(Action action){
   // Additional book-keeping
 	int player = GetPlayer();
-	if (action_id == phse_constants[9]) {
+	if (action_id == 0 && GetChance()) {
 		switch (GetPhse()) {
 		case 4:
 			Attack();
@@ -961,7 +955,7 @@ std::vector<Action> RiskState::LegalActions() const {
 	std::vector<Action> res = {};
 	int player = GetPlayer();
 	if (GetChance() == 1) {
-		res.push_back(phse_constants[9]);
+		res.push_back(0);
 	}
 	else {
 		switch (GetPhse()) {
@@ -1014,7 +1008,7 @@ std::vector<Action> RiskState::LegalActions() const {
 			res.push_back(phse_constants[2]);
 			for (int i = 0; i < num_terrs_; ++i) {
 				for (int j = 0; j < num_terrs_; ++j) {
-					if (attackable_mask[i] && anti_mask[j] && kAdjMatrix[i][j]) {
+					if (attackable_mask[i] && anti_mask[j] && adj_matrix[i][j]) {
 						res.push_back(phse_constants[2] + 1 + i);
 						break;
 					}
@@ -1026,7 +1020,7 @@ std::vector<Action> RiskState::LegalActions() const {
 			int from_coord = GetCoord(2);
 			std::array<int, num_terrs_> troop_arr = GetTroopArr(player);
 			for (int i = 0; i < num_terrs_; ++i) {
-				if (kAdjMatrix[i][from_coord] && troop_arr[i] == 0) {
+				if (adj_matrix[i][from_coord] && troop_arr[i] == 0) {
 					res.push_back(i + phse_constants[3]);
 				}
 			}
@@ -1074,7 +1068,7 @@ std::vector<Action> RiskState::LegalActions() const {
 			for (int i = 0; i < num_terrs_; ++i) {
 				if (troop_arr[i] > 1) {
 					for (int j = 0; j < num_terrs_; ++j) {
-						if (troop_arr[j] && kAdjMatrix[i][j] && i != j) {
+						if (troop_arr[j] && adj_matrix[i][j] && i != j) {
 							res.push_back(phse_constants[6] + 1 + i);
 							std::cout << kTerrNames[i] + "\n";
 							break;
@@ -1131,14 +1125,14 @@ std::vector<double> RiskState::Rewards() const{
     for (int i = 0; i < num_players_; ++i) {
         arr[i] = GetEliminated(i);
         if (arr[i] == 0) {
-            split_rewards += kRewards[num_players_ - split - 1];
+            split_rewards += rewards[num_players_ - split - 1];
             split += 1;
         }
     }
     double split_reward = (double)split_rewards / split;
     for (int i = 0; i < num_players_; ++i) {
         if (arr[i] != 0) {
-            res.push_back( kRewards[arr[i] - 1]);
+            res.push_back( rewards[arr[i] - 1]);
         }
         else {
             res.push_back(split_reward);
@@ -1185,12 +1179,12 @@ bool RiskState::IsPlayerNode() const {
 }
 
 ActionsAndProbs RiskState::ChanceOutcomes() const {
-    return ActionsAndProbs{ std::make_pair(phse_constants[9], 1) };
+    return ActionsAndProbs{ std::make_pair(0, 1) };
 }
 
 std::vector<Action> RiskState::LegalChanceOutcomes() const{
     if (IsChanceNode()) {
-        return { num_distinct_actions_-1 };
+        return { 0 };
    }
     else {
         return {};
@@ -1249,7 +1243,7 @@ std::vector<int> RiskGame::ObservationTensorShape() const {
   // One-hot encoding for the single private card. (n+1 cards = n+1 bits)
   // Followed by the contribution of each player to the pot (n).
   // n + n + 1 + n = 3n + 1.
-    return {};
+    return { num_players_ * num_terrs_ + 2 * num_players_ + 16 + 6 * num_terrs_ + num_players_*(num_players_ - 1) };
 }
 
    

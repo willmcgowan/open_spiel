@@ -26,8 +26,52 @@ namespace {
 namespace testing = open_spiel::testing;
 
 void BasicRiskTests() {
-  testing::LoadGameTest("risk");
-  testing::RandomSimTest(*LoadGame("risk"), 1000);
+	testing::LoadGameTest("risk");
+	testing::ChanceOutcomesTest(*LoadGame("risk"))
+		for (int i = 0; i< 2; ++i) {
+			for (int j = 2; i < 7; ++j) {
+				std::vector<int> rewards;
+				std::vector<int> assist;
+				std::vector<int> abstraction0 = { false,false,false,false };
+				std::vector<int> abstraction1 = { true,true,true,true };
+				std::vector<int> action_q0 = { 55,1000,1000,1000 };
+				std::vector<int> action_q1 = { 5,1,1,1 };
+				int max_turns;
+				switch (j) {
+				case 2:
+					max_turns = 90;
+					rewards = { -1,1 };
+					assist = { 0,3 };
+					break;
+				case 3:
+					max_turns = 85;
+					rewards = { -1,-1,2 };
+					assist = { 0,0,3 };
+					break;
+				case 4:
+					max_turns = 80;
+					rewards = { -1,-1,-1,3 };
+					assist = { 0,0,0,3 };
+					break;
+				case 5:
+					max_turns = 75;
+					rewards = { -1,-1,-1,-1,4 };
+					assist = { 0,0,0,1,3 };
+					break;
+
+				case 6:
+					max_turns = 70;
+					rewards = { -1,-1,-1,-1,-1,5 };
+					assist = { 0,0,0,1,2,3 };
+					break;
+				}
+				testing:::RandomSimTest(
+					*LoadGame("risk", { {"players", GameParameter(j)},{"map",GameParameter(i)},{"max_turns",GameParameter(max_turns)},{"rewards",GameParameter(rewards)},{"assist",GameParameter(assist)},{"abstraction",GameParameter(abstraction0)},{"action_q",GameParameter(action_q0)} }), 100);
+				testing:::RandomSimTest(
+					*LoadGame("risk", { {"players", GameParameter(j)},{"map",GameParameter(i)},{"max_turns",GameParameter(max_turns)},{"rewards",GameParameter(rewards)},{"assist",GameParameter(assist)},{"abstraction",GameParameter(abstraction1)},{"action_q",GameParameter(action_q1)} }), 100);
+			}
+		}
+	}
 }
 }  // namespace
 }  // namespace risk

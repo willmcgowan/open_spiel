@@ -68,7 +68,6 @@ namespace risk {
     const std::array<int, 6> ClassicContinentBonusArr = { 2, 7, 5, 2, 3, 5 };
     const std::array<int, 4> ClassicCardArr = { 14,28,42,44 };
     const std::array<std::string, 42> ClassicTerrNames = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
-
     const int kNumTerrs = ClassicNumTerrs;
     const int kNumContinents = 6;
     const int kNumPlayers = 6;
@@ -172,34 +171,65 @@ class RiskState : public State {
 
  private:
   friend class RiskObserver;
+  int num_terrs_;
+  int num_continents;
+  int starting_troops;
+  std::vector<int> rewards;
+  std::vector<int> assist;
   std::array<int, 2 * kNumPlayers * kNumTerrs + 14 + 2 * kNumPlayers + kNumPlayers * kNumPlayers + 5 * kNumTerrs> board;
+  std::array<std::array<bool,num_terrs>,num_terrs> adj_matrix;
+  std::array<std::array<bool, num_terrs>, num_terrs> cont_matrix;
+  std::array<int, num_continents> cont_bonus;
+  std::array<int, 4> card_arr;
+  std::array<bool, 4> abstraction;
+  std::array<int, 4> action_q;//for no abstraction represents how many troops from 1 to that number that can be utilised, if abstraction then it represents number of bins
+  std::array<int, 10> phse_constants;
 };
 
 class RiskGame : public Game {
  public:
   explicit KuhnGame(const GameParameters& params);
-  int NumDistinctActions() const override { return kPhseConstants[9]; }
+  int NumDistinctActions() const override { return num_distinct_actions_; }
   std::unique_ptr<State> NewInitialState() const override;
   int MaxChanceOutcomes() const override { return 1; }
-  int NumPlayers() const override { return kNumPlayers; }
-  double MinUtility() const override {return std::min(kRewards)};
-  double MaxUtility() const override {return std::max(kRewards)};
+  int NumPlayers() const override { return num_players_; }
+  double MinUtility() const override { return std::min(rewards_); };
+  double MaxUtility() const override { return std::max(rewards_); };
   double UtilitySum() const override { return 0; }
   std::vector<int> ObservationTensorShape() const override;
-  int MaxGameLength() const override { return kMaxGameLength; }
-  int MaxChanceNodesInHistory() const override { return kMaxChanceNodesInHistory)
+  int MaxGameLength() const override { return max_game_length_; }
+  int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_;}
+  int MapType() const { return map_type_; }
+  int NumTerrs() const { return num_terrs_; }
+  std::vector<int> Rewards() const { return rewards_; }
+  std::vector<int> Assist() const { return assist_; }
+  std::array<bool, 4> Abstraction()const { return abstraction_; }
+  std::array<int, 4> ActionQ() const { return action_q_; }
+  
   std::shared_ptr<Observer> MakeObserver(
       absl::optional<IIGObservationType> iig_obs_type,
       const GameParameters& params) const override;
 
   // Used to implement the old observation API.
-  std::shared_ptr<KuhnObserver> default_observer_;
-  std::shared_ptr<KuhnObserver> public_observer_;
-  std::shared_ptr<KuhnObserver> private_observer_;
+  std::shared_ptr<RiskObserver> default_observer_;
+  std::shared_ptr<RiskObserver> public_observer_;
+  std::shared_ptr<RiskObserver> private_observer_;
 
  private:
   // Number of players.
-     int num_players_ = kNumPlayers;
+     int num_players_;
+     int map_type_;
+     int num_terrs_;
+     int max_turns_;
+     int num_distinct_actions_;
+     int max_chance_nodes_in_history_;
+     int max_game_length_;
+     std::vector<int> rewards_;
+     std::vector<int> assist_;
+     std::array<bool, 4> abstraction_;
+     std::array<int, 4> action_q_;
+        
+
 };
 }  // namespace risk
 }  // namespace open_spiel

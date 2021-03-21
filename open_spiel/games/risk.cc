@@ -27,13 +27,64 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
 
+
+
+//might need to change the current chance action id to zero etc for reasons//
 namespace open_spiel {
 namespace risk {
 namespace {
 
 // Default parameters.
 constexpr int kDefaultPlayers = 2;
-constexpr double kAnte = 1;
+constexpr int kDefaultMap = 1;
+constexpr int kDefaultMaxTurns = 90;   
+constexpr std::vector<int> kDefaultRewards = { -1,1 };
+constexpr std::vector<int> kDefaultAssist = { 0,3 };
+constexpr std::vector<bool> kDefaultAbstraction = { false,false,false,false };
+constexpr std::vector<int> kDefaultAbstractionQ = { 55,1000,1000,1000 };
+
+
+
+//couldnt get these to work with templates so here is this ugly stupid code//
+std::array<std::array<bool, 19>, 19> SimpleAdjMatrixer(std::vector<std::vector<int>>dict) {
+    std::array<std::array<bool, 19>, 19> res = {0}
+    for (int i = 0; i < dict.size(); ++i) {
+        for (int j = 0; j < dict[i].size(); ++j) {
+            res[i][dict[i][j]] == 1;
+        }
+    }
+    return res;
+}
+std::array<std::array<bool, 42>, 42> ClassicAdjMatrixer(std::vector<std::vector<int>>dict) {
+    std::array<std::array<bool, 42>, 42> res = { 0 }
+    for (int i = 0; i < dict.size(); ++i) {
+        for (int j = 0; j < dict[i].size(); ++j) {
+            res[i][dict[i][j]] == 1;
+        }
+    }
+    return res;
+}
+
+std::array<std::array<bool, 19>, 6> SimpleContMatrixer(std::vector<std::vector<int>>dict) {
+    std::array<std::array<bool, 19>, 6> res = { 0 };
+    for (int i = 0; i < dict.size(); ++i) {
+        for (int j = 0; j < dict[i].size(); ++j) {
+            res[i][dict[i][j]] == 1;
+        }
+    }
+    return res;
+}
+std::array<std::array<bool, 42>, 6> ClassicContMatrixer(std::vector<std::vector<int>>dict) {
+    std::array<std::array<bool, 42>, 6> res = { 0 };
+    for (int i = 0; i < dict.size(); ++i) {
+        for (int j = 0; j < dict[i].size(); ++j) {
+            res[i][dict[i][j]] == 1;
+        }
+    }
+    return res;
+}
+
+
 
 // Facts about the game
 const GameType kGameType{/*short_name=*/"risk",
@@ -43,16 +94,16 @@ const GameType kGameType{/*short_name=*/"risk",
                          GameType::Information::kImperfectInformation,
                          GameType::Utility::kZeroSum,
                          GameType::RewardModel::kTerminal,
-                         /*max_num_players=*/kNumPlayers,
-                         /*min_num_players=*/kNumPlayers,
+                         /*max_num_players=*/2,
+                         /*min_num_players=*/6,
                          /*provides_information_state_string=*/false,
                          /*provides_information_state_tensor=*/false,
                          /*provides_observation_string=*/false,
                          /*provides_observation_tensor=*/true,
                          /*parameter_specification=*/
-                          {{"players", GameParameter(kDefaultPlayers)}}  ,
+                          {{"players", GameParameter(kDefaultPlayers)},{"map",GameParameter(kDefaultMap)},{"max_turns",GameParameter(kDefaultMaxTurns)},{"rewards",GameParameter(kDefaultRewards)},{"assist",GameParameter(kDefaultAssist)},{"abstraction",GameParameter(kDefaultAbstraction)},{"action_q",GameParameter(kDefaultActionQ}},
                          /*default_loadable=*/true,
-                         /*provides_factored_observation_string=*/true,
+                         /*provides_factored_observation_string=*/false,
                         };
 
 std::shared_ptr<const Game> Factory(const GameParameters& params) {
@@ -111,65 +162,105 @@ class RiskObserver : public Observer {
 
 RiskState::RiskState(std::shared_ptr<const Game> game)
     : State(game),
-      first_bettor_(kInvalidPlayer),
-      card_dealt_(game->NumPlayers() + 1, kInvalidPlayer),
-      winner_(kInvalidPlayer),
-      pot_(kAnte * game->NumPlayers()),
+    num_terrs_(game->NumTerrs()),
+    rewards(game->Rewards()),
+    assist(game->Assist()),
+    abstraction(game->Abstraction()),
+    action_q(game->ActionQ()){
+    switch (num_players_) {
+    case 2:
+        starting_troops = 40;
+        break;
+    case 3:
+        starting_troops = 35;
+        break;
+    case 4:
+        starting_troops = 30;
+        break;
+    case 5:
+        starting_troops = 25;
+        break;
+    case 6:
+        starting_troops = 20;
+        break;
+    }
+    std::array<int, 2 * num_players_ * num_terrs_ + 5 * num_terrs_ + 2 * num_players_ + num_players_ * num_players_ + 14> board = { 0 };
+    std::array<std::array<bool, num_terrs_>, 6> cont_matrix = ContMatrixer(std::vector < std::vector<int>>)
+    if(game->map_type_ == 0){
+        card_arr = ClassicCardArr;
+        adj_matrix = std::array<std::array<bool, num_terrs_>, num_terrs_> ClassicAdjMatrixer(std::vector<std::vector<int>>ClassicAdjVect);
+        std::array<std::array<bool, num_terrs_>, 6> cont_matrix =ClassicContMatrixer(std::vector<std::vector<int>>ClassicContVect);
+        cont_bonus = ClassicContBonus;
+    }
+    else if (game->map_type_ == 1) {
+        card_arr = SimpleCardArr;
+        adj_matrix = std::array<std::array<bool, num_terrs_>, num_terrs_> SimpleAdjMatrixer(std::vector<std::vector<int>>SimpleAdjVect);
+        cont_matrix = std::array<std::array<bool, num_terrs_>, 6>SimpleContMatrixer(std::vector<std::vector<int>>SimpleContVect);
+        cont_bonus = SimpleContBonus;
+    }
+    std::array<int, 10> phse_constants = { 0,num_terrs_ + 1,num_terrs_ + 1 + action_q[0],2 * num_terrs_ + 2 + action_q[0],3 * num_terrs_ + 2 + action_q[0], 3 * num_terrs_ + 2 + action_q[0] + action_q[1], 3 * num_terrs_ + 3 + action_q[0] + action_q[1] + action_q[2], 4 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2], 5 * num_terrs_ + 4 + action_q[0] + action_q[1] + action_q[2], 5 * num_terrs_ + 4 +action_q[0] + action_q[1] + action_q[2] +action_q[3] };
+    SetIncome(1);
+    SetPlayer(0);
+    SetPhse(0);
+}
+        
+
+
       // How much each player has contributed to the pot, indexed by pid.
       ante_(game->NumPlayers(), kAnte) {}
 
 void RiskState::ResetPlayer() {
-    for (int i = 0; i < kNumPlayers; ++i) {
-        board[kNumPlayers * kNumTerrs + i] = 0;
+    for (int i = 0; i < num_players_; ++i) {
+        board[num_players_ * num_terrs_ + i] = 0;
     }
 }
 
 void RiskState::SetPlayer(int player) {
     ResetPlayer();
-    board[kNumPlayers * kNumTerrs + player] = 1;
+    board[num_players_ * num_terrs_ + player] = 1;
 }
 
 void RiskState::SetNextPlayer() {
     int cur_player = GetPlayer();
-    int new_player = (cur_player + 1) % kNumPlayers;
-    board[kNumPlayers * kNumTerrs + cur_player] = 0;
-    board[kNumPlayers * kNumTerrs + new_player] = 1;
+    int new_player = (cur_player + 1) % num_players_;
+    board[num_players_ * num_terrs_ + cur_player] = 0;
+    board[num_players_ * num_terrs_ + new_player] = 1;
     if (new_player == 0) {
         IncrementTurns(1);
     }
 }
 
 int RiskState::GetPlayer() const {
-    for (int i = 0; i < kNumPlayers; ++i) {
-        if (board[kNumPlayers * kNumTerrs + i] == 1) {
+    for (int i = 0; i < num_players_; ++i) {
+        if (board[num_players_ * num_terrs_ + i] == 1) {
             return i;
         }
     }
-    return kNumPlayers;
+    return num_players_;
 }
 
 int RiskState::GetTurns() const{
-    return board[kNumPlayers * kNumTerrs + kNumPlayers];
+    return board[num_players_ * num_terrs_ + num_players_];
 }
 
 void RiskState::IncrementTurns(int increment) {
-    board[kNumPlayers * kNumTerrs + kNumPlayers] += 1;
+    board[num_players_ * num_terrs_ + num_players_] += 1;
 }
 
 void RiskState::ResetPhse() {
     for (int i = 0; i < 9; ++i) {
-        board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + i] = 0;
+        board[num_players_ * num_terrs_ + num_players_ + 1 + i] = 0;
     }
 }
 
 void RiskState::SetPhse(int phse) {
     ResetPhse();
-    board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + phse] = 1;
+    board[num_players_ * num_terrs_ + num_players_ + 1 + phse] = 1;
 }
 
 int RiskState::GetPhse() const{
     for (int i = 0; i < 9; ++i) {
-        if (board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + i] == 1) {
+        if (board[num_players_ * num_terrs_ + num_players_ + 1 + i] == 1) {
             return i;
         }
     }
@@ -177,43 +268,43 @@ int RiskState::GetPhse() const{
 }
 
 void RiskState::SetIncome(int income) {
-    board[kNumPlayers * kNumTerrs + kNumPlayers + 2 + 9] = income;
+    board[num_players_ * num_terrs_ + num_players_ + 2 + 9] = income;
 }
 
 int RiskState::GetIncome() const {
-    return board[kNumPlayers * kNumTerrs + kNumPlayers + 2 + 9];
+    return board[num_players_ * num_terrs_ + num_players_ + 2 + 9];
 }
 
 void RiskState::IncrementIncome(int increment) {
-    board[kNumPlayers * kNumTerrs + kNumPlayers + 2 + 9] += increment;
+    board[num_players_ * num_terrs_ + num_players_ + 2 + 9] += increment;
 }
 
 void RiskState::SetChance(int chance) {
-    board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + 9] = chance;
+    board[num_players_ * num_terrs_ + num_players_ + 1 + 9] = chance;
 }
 
 int RiskState::GetChance() const {
-    return board[kNumPlayers * kNumTerrs + kNumPlayers + 1 + 9];
+    return board[num_players_ * num_terrs_ + num_players_ + 1 + 9];
 }
 
 void RiskState::SetTerr(int coord,int player,int troops) {
-    board[player * kNumTerrs + coord] = troops;
+    board[player * num_terrs_ + coord] = troops;
 }
 
 void RiskState::IncrementTerr(int coord,int player, int increment) {
-    board[player*kNumTerrs + coord] += increment;
+    board[player*num_terrs_ + coord] += increment;
 }
 
 void RiskState::SetSucc(int val) {
-    board[kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 5 * kNumTerrs] = val;
+    board[num_players_ * num_terrs_ + num_players_ + 4 + 9 + 5 * num_terrs_] = val;
 }
 
 int RiskState::GetSucc() const{
-    return board[kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 5 * kNumTerrs];
+    return board[num_players_ * num_terrs_ + num_players_ + 4 + 9 + 5 * num_terrs_];
 }
 
 void RiskState::ResetActions() {
-    for (int i = kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9; i < kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 5 * kNumTerrs; ++i) {
+    for (int i = num_players_ * num_terrs_ + num_players_ + 3 + 9; i < num_players_ * num_terrs_ + num_players_ + 4 + 9 + 5 * num_terrs_; ++i) {
         board[i] = 0;
     }
 }
@@ -222,27 +313,27 @@ void RiskState::SetCoord(int coord) {
     switch (GetPhse()) {
     case 0:
         //dep_to//
-        board[kNumPlayers * kNumTerrs + kNumPlayers + 3 +9+ coord]=1;
+        board[num_players_ * num_terrs_ + num_players_ + 3 +9+ coord]=1;
         SetPhse(1);
         break;
     case 2:
         //atk_from//
-        board[kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + kNumTerrs+coord] = 1;
+        board[num_players_ * num_terrs_ + num_players_ + 3 + 9 + num_terrs_+coord] = 1;
         SetPhse(3);
         break;
     case 3:
         //atk_to/
-        board[kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + 2*kNumTerrs + coord] = 1;
+        board[num_players_ *num_terrs_ + num_players_ + 3 + 9 + 2*num_terrs_ + coord] = 1;
         SetPhse(4);
         break;
     case 6:
         //fort_from//
-        board[kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 3 * kNumTerrs + coord] = 1;
+        board[num_players_ * num_terrs_ + num_players_ + 4 + 9 + 3 * num_terrs_ + coord] = 1;
         SetPhse(7);
         break;
     case 7:
         //fort_to//
-        board[kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 4 * kNumTerrs + coord] = 1;
+        board[num_players_ *num_terrs_ + num_players_ + 4 + 9 + 4 * num_terrs_ + coord] = 1;
         SetPhse(8);
         break;
     }
@@ -252,36 +343,36 @@ int RiskState::GetCoord(int phse) const {
     int constant = 0;
     switch (phse) {
     case 0:
-        constant = kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9;
+        constant = num_players_ * num_terrs_ + num_players_ + 3 + 9;
         break;
     case 2:
-        constant = kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + kNumTerrs;
+        constant = num_players_ * num_terrs_ + num_players_ + 3 + 9 + num_terrs_;
         break;
     case 3:
-        constant = kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + 2 * kNumTerrs;
+        constant = num_players_ * num_terrs_ + num_players_ + 3 + 9 + 2 * num_terrs_;
         break;
     case 6:
-        constant = kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 3 * kNumTerrs;
+        constant = num_players_ * num_terrs_ + num_players_ + 4 + 9 + 3 * num_terrs_;
         break;
     case 7:
-        constant = kNumPlayers * kNumTerrs + kNumPlayers + 4 + 9 + 4 * kNumTerrs;
+        constant = num_players_ * num_terrs_ + num_players_ + 4 + 9 + 4 * num_terrs_;
         break;
     }
-    for (int i = 0; i < kNumTerrs; ++i) {
+    for (int i = 0; i < num_terrs_; ++i) {
         if (board[constant + i] == 1) {
             return i;
         }
     }
-    return kNumTerrs;
+    return num_terrs_;
 }
 
 void RiskState::SetAtkNum(int num) {
-    board[kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + 3 * kNumTerrs] = num;
+    board[num_players_ * num_terrs_ + num_players_ + 3 + 9 + 3 * num_terrs_] = num;
     SetChance(1);
 }
 
 int RiskState::GetAtkNum() const {
-    return board[kNumPlayers * kNumTerrs + kNumPlayers + 3 + 9 + 3 * kNumTerrs];
+    return board[num_players_ * num_terrs_ + num_players_ + 3 + 9 + 3 * num_terrs_];
 }
 
 void RiskState::SetDeploy() {
@@ -304,32 +395,32 @@ void RiskState::SetFortify() {
 }
 
 void RiskState::SetCard(int player, int card_coord,int amount){
-    board[kNumPlayers * kNumTerrs + kNumPlayers + 5 + 9 + 5 * kNumTerrs + (kNumTerrs + 2) * player + card_coord] = amount;
+    board[num_players_ * num_terrs_ + num_players_ + 5 + 9 + 5 * num_terrs_ + (num_terrs_ + 2) * player + card_coord] = amount;
 }
 
 bool RiskState::GetCard(int player, int card_coord) const{
-    return board[kNumPlayers * kNumTerrs + kNumPlayers + 5 + 9 + 5 * kNumTerrs + (kNumTerrs + 2) * player + card_coord];
+    return board[num_players_ * num_terrs_ + num_players_ + 5 + 9 + 5 * num_terrs_ + (num_terrs_ + 2) * player + card_coord];
 }
 
 void RiskState::ResetHand(int player) {
-    for (int i = 0; i < kNumTerrs + 2; ++i) {
+    for (int i = 0; i < num_terrs_ + 2; ++i) {
         SetCard(player, i, 0);
     }
 }
 
-std::array<bool, kNumTerrs + 2> RiskState::GetHand(int player) const{
-    std::array<bool, kNumTerrs + 2> res = { 0 };
-    for (int i = 0; i < kNumTerrs + 2; ++i) {
+std::array<bool, num_terrs_ + 2> RiskState::GetHand(int player) const{
+    std::array<bool, num_terrs_ + 2> res = { 0 };
+    for (int i = 0; i < num_terrs_ + 2; ++i) {
         res[i] = GetCard(player,i);
     }
     return res;
 }
 
-std::array<bool, (kNumTerrs + 2)> RiskState::GetCards() const {
-    std::array<bool, (kNumTerrs + 2)> res = { 0 };
-    for (int i = 0; i < kNumPlayers; ++i) {
+std::array<bool, (num_terrs_ + 2)> RiskState::GetCards() const {
+    std::array<bool, (num_terrs_ + 2)> res = { 0 };
+    for (int i = 0; i < num_players_; ++i) {
         auto hand = GetHand(i);
-        for (int j = 0; j < kNumTerrs + 2; ++j) {
+        for (int j = 0; j < num_terrs_ + 2; ++j) {
             res[j] = hand[j];
         }
     }
@@ -401,28 +492,28 @@ std::array<int,3> RiskState::GetSatCards(std::array<int, 3> component_arr) const
 }
 
 int RiskState::GetOwner(int coord) const{
-    for (int i = 0; i < kNumPlayers; ++i) {
-        if (board[i * kNumTerrs + coord] != 0) {
+    for (int i = 0; i < num_players_; ++i) {
+        if (board[i * num_terrs_ + coord] != 0) {
             return i;
         }
     }
-    return kNumPlayers;
+    return num_players_;
 }
 
-std::array<int,kNumTerrs> RiskState::GetTroopArr(int player) const{
-    std::array<int, kNumTerrs> res = { 0 };
-    for (int i = 0; i < kNumTerrs; ++i) {
-        if (board[kNumTerrs * player + i] > 0) {
-            res[i] = board[kNumTerrs * player + i];
+std::array<int,num_terrs_> RiskState::GetTroopArr(int player) const{
+    std::array<int,num_terrs_> res = { 0 };
+    for (int i = 0; i < num_terrs_; ++i) {
+        if (board[num_terrs_ * player + i] > 0) {
+            res[i] = board[num_terrs_ * player + i];
         }
     }
     return res;
 }
 
-std::array<bool, kNumTerrs> RiskState::GetTroopMask(int player) const{
-    std::array<bool, kNumTerrs> res = { 0 };
-    for (int i = 0; i < kNumTerrs; ++i) {
-        if (board[kNumTerrs * player + i] > 0) {
+std::array<bool, num_terrs_> RiskState::GetTroopMask(int player) const{
+    std::array<bool, num_terrs_> res = { 0 };
+    for (int i = 0; i < num_terrs_; ++i) {
+        if (board[num_terrs_ * player + i] > 0) {
             res[i] = 1;
         }
     }
@@ -430,8 +521,8 @@ std::array<bool, kNumTerrs> RiskState::GetTroopMask(int player) const{
 }
 
 int RiskState::GetEliminated(int player) const{
-    for (int i = 0; i < kNumPlayers - 1; ++i) {
-        if (board[2 * kNumPlayers * kNumTerrs + 5 + 9 + 5 * kNumTerrs + 3 * kNumPlayers +player*(kNumPlayers-1)+i] == 1) {
+    for (int i = 0; i < num_players_ - 1; ++i) {
+        if (board[2 * num_players_ * num_terrs_ + 5 + 9 + 5 * num_terrs_ + 3 * num_players_ +player*(num_players_-1)+i] == 1) {
             return i+1;
         }
     }
@@ -440,7 +531,7 @@ int RiskState::GetEliminated(int player) const{
 
 int RiskState::GetMaxElim() const {
     int max = 0;
-    for (int i = 0; i < kNumPlayers; ++i) {
+    for (int i = 0; i < num_players_; ++i) {   
         int elim = GetEliminated(i);
         if (elim > max) {
             max = elim;
@@ -472,19 +563,19 @@ void RiskState::EndTurn() {
 
 void RiskState::Eliminate(int victim, int victor) {
     auto victim_hand = GetHand(victim);
-    for (int i = 0; i < kNumTerrs+2; ++i) {
-        board[kNumPlayers * kNumTerrs + kNumPlayers + 5 + 9 + 5 * kNumTerrs + (kNumTerrs + 2) *victor + i ]=victim_hand[i];
+    for (int i = 0; i < num_terrs_+2; ++i) {
+        board[num_players_ * num_terrs_ + num_players_ + 5 + 9 + 5 * num_terrs_ + (num_terrs_ + 2) *victor + i ]=victim_hand[i];
         ResetHand(victim);
     }
     int max = GetMaxElim();
-    board[2 * kNumPlayers * kNumTerrs + 5 + 9 + 5 * kNumTerrs + 3 * kNumPlayers + victim* (kNumPlayers - 1) + max] = 1;
+    board[2 * num_players_ * num_terrs_ + 5 + 9 + 5 * num_terrs_ + 3 * num_players_ + victim* (num_players_ - 1) + max] = 1;
 }
 
 void RiskState::Deal() {
     int player = GetPlayer();
     assert(GetChance()==1);
     std::vector<int> internal_deck = {};
-    std::array<int,kNumTerrs+2> cards = GetCards();
+    std::array<int,num_terrs_+2> cards = GetCards();
     for (int i = 0; i < (int)cards.size(); ++i) {
         if (cards[i] == 0) {
             internal_deck.push_back(i);
@@ -520,7 +611,7 @@ void RiskState::Cash() {
     bool bonus = false;
     auto sat_cards = GetSatCards(component_arr[index]);
     for (int i = 0; i < 3; ++i) {
-        if (sat_cards[i] < kNumTerrs &&bonus ==false) {
+        if (sat_cards[i] < num_terrs_ &&bonus ==false) {
             if (GetOwner(sat_cards[i]) == player) {
                 bonus = true;
                 IncrementTerr(sat_cards[i], player, 2);
@@ -540,9 +631,9 @@ void RiskState::Income() {
         income = 1;
     }
     else {
-        std::array<bool,kNumTerrs> troop_mask = GetTroopMask(GetPlayer());
+        std::array<bool,num_terrs_> troop_mask = GetTroopMask(GetPlayer());
         int terrs = 0;
-        for (int i = 0; i < kNumTerrs; ++i) {
+        for (int i = 0; i < num_terrs_; ++i) {
             if (troop_mask[i]) {
                 terrs += 1;
             }
@@ -552,7 +643,7 @@ void RiskState::Income() {
         int ast_bonus = 0;
         for (int i = 0; i < kNumContinents; ++i) {
             bool sat = true;
-            for (int j = 0; j < kNumTerrs; ++j) {
+            for (int j = 0; j < num_terrs_; ++j) {
                 if (!(!troop_mask[j] && kContinentMatrix[i][j])) {
                     sat = false;
                     break;
@@ -596,7 +687,7 @@ void RiskState::Attack() {
     int coord_to = GetCoord(3);
     int atk_player = GetPlayer();
     int def_player = GetOwner(coord_to);
-    int n_def = board[kNumTerrs*def_player+coord_to];
+    int n_def = board[num_terrs_*def_player+coord_to];
     int start_amount = n_atk;
     while (n_atk > 0 && n_def > 0) {
         std::random_device seed;
@@ -683,8 +774,8 @@ void RiskState::Attack() {
         SetAttack();
     }
     bool def_dead = true;
-    for (int i = 0; i < kNumTerrs; ++i) {
-        if (board[kNumTerrs * def_player + i] != 0) {
+    for (int i = 0; i < num_terrs_; ++i) {
+        if (board[num_terrs_ * def_player + i] != 0) {
             def_dead = false;
             break;
         }
@@ -722,10 +813,10 @@ void RiskState::Fortify(int amount) {
     EndTurn();
 }
 
-void RiskState::DepthFirstSearch(int player, int vertex,std::array<bool,kNumTerrs>* out) const{
+void RiskState::DepthFirstSearch(int player, int vertex,std::array<bool,num_terrs_>* out) const{
     (*out)[vertex]=1;
-    for (int i = 0; i < kNumTerrs;++i) {
-        if (kAdjMatrix[vertex][i] &&board[player*kNumTerrs+i]!=0&& !(*out)[i] ){
+    for (int i = 0; i < num_terrs_;++i) {
+        if (kAdjMatrix[vertex][i] &&board[player*num_terrs_+i]!=0&& !(*out)[i] ){
             DepthFirstSearch(player, i, out);
         }
     }
@@ -759,16 +850,7 @@ int RiskState::RetAbstraction(int action,int abs) const {
         num = GetTroopArr(GetPlayer())[GetCoord(6)]-1;
         break;
     }
-    return (int)std::floor((action + 1) * num / abs);
-}
-//this could be very stupid and bad//
-RiskState::RiskState(std::shared_ptr<Game>game)
-: State(game),board{0},
-move_number_(0),
-num_distinct_actions(kPhseConstants[9]){
-    SetIncome(1);
-    SetPlayer(0);
-    SetPhse(0);
+    return (int)std::round((action + 1) * num / abs);
 }
 
 int RiskState::CurrentPlayer() const {
@@ -783,7 +865,7 @@ int RiskState::CurrentPlayer() const {
 void RiskState::DoApplyAction(Action action){
   // Additional book-keeping
 	int player = GetPlayer();
-	if (action_id == kPhseConstants[9]) {
+	if (action_id == phse_constants[9]) {
 		switch (GetPhse()) {
 		case 4:
 			Attack();
@@ -798,7 +880,7 @@ void RiskState::DoApplyAction(Action action){
 		return;
 	}
 	else {
-		int t_action = action_id - kPhseConstants[GetPhse()];
+		int t_action = action_id - phse_constants[GetPhse()];
 		switch (GetPhse()) {
 		case 0: {
 			if (t_action == 0) {
@@ -810,12 +892,12 @@ void RiskState::DoApplyAction(Action action){
 			break;
 		}
 		case 1:
-			if (kDepAbs == false) {
+			if (!abstraction[0]) {
 
 				Deploy(t_action + 1);
 			}
 			else {
-				Deploy(RetAbstraction(t_action, kDepAbs));
+				Deploy(RetAbstraction(t_action, action_q[0]));
 			}
 			break;
 		case 2:
@@ -831,11 +913,11 @@ void RiskState::DoApplyAction(Action action){
 			SetCoord(t_action);
 			break;
 		case 4:
-			if (kAtkAbs == false) {
+			if (!abstraction[1]) {
 				SetAtkNum(t_action + 1);
 			}
 			else {
-				SetAtkNum(RetAbstraction(t_action, kAtkAbs));
+				SetAtkNum(RetAbstraction(t_action, action_q[1]));
 			}
 			SetChance(1);
 			break;
@@ -843,11 +925,11 @@ void RiskState::DoApplyAction(Action action){
 			if (t_action == 0) {
 				SetAttack();
 			}
-			else if (kRedistAbs == false) {
+			else if (!abstraction[2]) {
 				Redistribute(t_action);
 			}
 			else {
-				Redistribute(RetAbstraction(t_action - 1, kRedistAbs));
+				Redistribute(RetAbstraction(t_action - 1, action_q[2]));
 			}
 			break;
 		case 6:
@@ -862,11 +944,11 @@ void RiskState::DoApplyAction(Action action){
 			SetCoord(t_action);
 			break;
 		case 8:
-			if (kFortAbs == false) {
+			if (!abstraction[3]) {
 				Fortify(t_action + 1);
 			}
 			else {
-				Fortify(RetAbstraction(t_action, kFortAbs));
+				Fortify(RetAbstraction(t_action, action_q[3]));
 			}
 			break;
 		}
@@ -878,7 +960,7 @@ std::vector<Action> RiskState::LegalActions() const {
 	std::vector<Action> res = {};
 	int player = GetPlayer();
 	if (GetChance() == 1) {
-		res.push_back(kPhseConstants[9]);
+		res.push_back(phse_constants[9]);
 	}
 	else {
 		switch (GetPhse()) {
@@ -887,29 +969,29 @@ std::vector<Action> RiskState::LegalActions() const {
 				res.push_back(0);
 			}
 			bool map_occupied = true;
-			for (int i = 0; i < kNumTerrs; ++i)
-				if (GetOwner(i) == kNumPlayers) {
+			for (int i = 0; i < num_terrs_; ++i)
+				if (GetOwner(i) == num_players_) {
 					map_occupied = false;
 					res.push_back(i + 1);
 				}
 			if (map_occupied) {
-				for (int i = 0; i < kNumTerrs; ++i)
-					if (board[player * kNumTerrs + i] != 0) {
+				for (int i = 0; i < num_terrs_; ++i)
+					if (board[player * num_terrs_ + i] != 0) {
 						res.push_back(i + 1);
 					}
 			}
 			break;
 		}
 		case 1: {
-			if (kDepAbs == false) {
+			if (!abstraction[0]) {
 				for (int i = 0; i < GetIncome(); ++i) {
-					res.push_back(i + kPhseConstants[1]);
+					res.push_back(i + phse_constants[1]);
 				}
 			}
 			else {
-				std::vector<int> abs = GetAbstraction(GetIncome(), kDepAbs);
+				std::vector<int> abs = GetAbstraction(GetIncome(),action_q[0]);
 				for (size_t i = 0; i < abs.size(); ++i) {
-					res.push_back(abs[i] + kPhseConstants[1]);
+					res.push_back(abs[i] + phse_constants[1]);
 				}
 
 			}
@@ -917,10 +999,10 @@ std::vector<Action> RiskState::LegalActions() const {
 		}
 			  //returns legal dep_q's
 		case 2: {//returns legal atk_from's
-			std::array<bool, kNumTerrs> attackable_mask = { 0 };
-			std::array<int, kNumTerrs> troop_arr = GetTroopArr(player);
-			std::array<bool, kNumTerrs> anti_mask = { 0 };
-			for (int i = 0; i < kNumTerrs; ++i) {
+			std::array<bool, num_terrs_> attackable_mask = { 0 };
+			std::array<int, num_terrs_> troop_arr = GetTroopArr(player);
+			std::array<bool, num_terrs_> anti_mask = { 0 };
+			for (int i = 0; i < num_terrs_; ++i) {
 				if (troop_arr[i] > 1) {
 					attackable_mask[i] = 1;
 				}
@@ -928,11 +1010,11 @@ std::vector<Action> RiskState::LegalActions() const {
 					anti_mask[i] = 1;
 				}
 			}
-			res.push_back(kPhseConstants[2]);
-			for (int i = 0; i < kNumTerrs; ++i) {
-				for (int j = 0; j < kNumTerrs; ++j) {
+			res.push_back(phse_constants[2]);
+			for (int i = 0; i < num_terrs_; ++i) {
+				for (int j = 0; j < num_terrs_; ++j) {
 					if (attackable_mask[i] && anti_mask[j] && kAdjMatrix[i][j]) {
-						res.push_back(kPhseConstants[2] + 1 + i);
+						res.push_back(phse_constants[2] + 1 + i);
 						break;
 					}
 				}
@@ -941,10 +1023,10 @@ std::vector<Action> RiskState::LegalActions() const {
 		}
 		case 3: {
 			int from_coord = GetCoord(2);
-			std::array<int, kNumTerrs> troop_arr = GetTroopArr(player);
-			for (int i = 0; i < kNumTerrs; ++i) {
+			std::array<int, num_terrs_> troop_arr = GetTroopArr(player);
+			for (int i = 0; i < num_terrs_; ++i) {
 				if (kAdjMatrix[i][from_coord] && troop_arr[i] == 0) {
-					res.push_back(i + kPhseConstants[3]);
+					res.push_back(i + phse_constants[3]);
 				}
 			}
 			break;
@@ -952,16 +1034,16 @@ std::vector<Action> RiskState::LegalActions() const {
 			  //returns legal atk_to's
 		case 4: {
 			int coord_from = GetCoord(2);
-			int atk_num = board[player * kNumTerrs + coord_from];
+			int atk_num = board[player * num_terrs_ + coord_from];
 			if (kAtkAbs == false) {
 				for (int i = 0; i < atk_num - 1; ++i) {
-					res.push_back(i + kPhseConstants[4]);
+					res.push_back(i + phse_constants[4]);
 				}
 			}
 			else {
-				std::vector<int> abs = GetAbstraction(atk_num - 1, kAtkAbs);
+				std::vector<int> abs = GetAbstraction(atk_num - 1, action_q[1]);
 				for (size_t i = 0; i < abs.size(); ++i) {
-					res.push_back(abs[i] + kPhseConstants[4]);
+					res.push_back(abs[i] + phse_constants[4]);
 				}
 			}
 			break;
@@ -969,30 +1051,30 @@ std::vector<Action> RiskState::LegalActions() const {
 			  //returns legal atk_q's
 		case 5: {
 			int coord_from = GetCoord(3);
-			int redist_num = board[player * kNumTerrs + coord_from];
-			res.push_back(0 + kPhseConstants[5]);
+			int redist_num = board[player * num_terrs_ + coord_from];
+			res.push_back(0 + phse_constants[5]);
 			if (kRedistAbs == false) {
 				for (int i = 0; i < redist_num - 1; ++i) {
-					res.push_back(i + 1 + kPhseConstants[5]);
+					res.push_back(i + 1 + phse_constants[5]);
 				}
 			}
 			else {
-				std::vector<int> abs = GetAbstraction(redist_num - 1, kRedistAbs);
+				std::vector<int> abs = GetAbstraction(redist_num - 1, action_q[2]);
 				for (size_t i = 0; i < abs.size(); ++i) {
-					res.push_back(abs[i] + 1 + kPhseConstants[5]);
+					res.push_back(abs[i] + 1 + phse_constants[5]);
 				}
 			}
 			break;
 		}//returns legal redist_q's
 
 		case 6: {
-			std::array<int, kNumTerrs> troop_arr = GetTroopArr(player);
-			res.push_back(kPhseConstants[6]);
-			for (int i = 0; i < kNumTerrs; ++i) {
+			std::array<int, num_terrs_> troop_arr = GetTroopArr(player);
+			res.push_back(phse_constants[6]);
+			for (int i = 0; i < num_terrs_; ++i) {
 				if (troop_arr[i] > 1) {
-					for (int j = 0; j < kNumTerrs; ++j) {
+					for (int j = 0; j < num_terrs_; ++j) {
 						if (troop_arr[j] && kAdjMatrix[i][j] && i != j) {
-							res.push_back(kPhseConstants[6] + 1 + i);
+							res.push_back(phse_constants[6] + 1 + i);
 							std::cout << kTerrNames[i] + "\n";
 							break;
 						}
@@ -1003,11 +1085,11 @@ std::vector<Action> RiskState::LegalActions() const {
 		}//returns legal fort_from's
 		case 7: {
 			int from_coord = GetCoord(6);
-			std::array<bool, kNumTerrs> dfs_arr = { 0 };
+			std::array<bool, num_terrs_> dfs_arr = { 0 };
 			DepthFirstSearch(player, from_coord, &dfs_arr);
-			for (int i = 0; i < kNumTerrs; ++i) {
+			for (int i = 0; i < num_terrs_; ++i) {
 				if (dfs_arr[i] && i != from_coord) {
-					res.push_back(kPhseConstants[7] + i);
+					res.push_back(phse_constants[7] + i);
 				}
 			}
 			break;
@@ -1016,16 +1098,16 @@ std::vector<Action> RiskState::LegalActions() const {
 		case 8: {
 			int from_coord = GetCoord(6);
 			int to_coord = GetCoord(7);
-			std::array<int, kNumTerrs> troop_arr = GetTroopArr(player);
+			std::array<int, num_terrs_> troop_arr = GetTroopArr(player);
 			if (kFortAbs == false) {
 				for (int i = 0; i < troop_arr[from_coord]; ++i) {
-					res.push_back(kPhseConstants[8] + i);
+					res.push_back(phse_constants[8] + i);
 				}
 			}
 			else {
-				std::vector<int> abs = GetAbstraction(troop_arr[from_coord] - 1, kFortAbs);
+				std::vector<int> abs = GetAbstraction(troop_arr[from_coord] - 1, action_q[3]);
 				for (int i = 0; i != abs.size(); ++i) {
-					res.push_back(abs[i] + kPhseConstants[8]);
+					res.push_back(abs[i] + phse_constants[8]);
 				}
 			}
 			break;
@@ -1042,18 +1124,18 @@ bool RiskState::IsTerminal() const { return winner_ != kInvalidPlayer; }
 std::vector<double> RiskState::Rewards() const{
     assert(IsTerminal());
     std::vector<double> res = { };
-    std::array<int, kNumPlayers> arr = { 0 };
+    std::array<int, num_players_> arr = { 0 };
     int split = 0;
     int split_rewards = 0;
-    for (int i = 0; i < kNumPlayers; ++i) {
+    for (int i = 0; i < num_players_; ++i) {
         arr[i] = GetEliminated(i);
         if (arr[i] == 0) {
-            split_rewards += kRewards[kNumPlayers - split - 1];
+            split_rewards += kRewards[num_players_ - split - 1];
             split += 1;
         }
     }
     double split_reward = (double)split_rewards / split;
-    for (int i = 0; i < kNumPlayers; ++i) {
+    for (int i = 0; i < num_players_; ++i) {
         if (arr[i] != 0) {
             res.push_back( kRewards[arr[i] - 1]);
         }
@@ -1067,7 +1149,7 @@ std::vector<double> RiskState::Rewards() const{
 std::vector<double> RiskState::Returns() const {
     if (!IsTerminal()) {
         std::vector<double> res = {};
-        for (int i = 0; i < kNumPlayers; ++i) {
+        for (int i = 0; i < num_players_ ; ++i) {
             res.push_back(0);
         }
         return res;
@@ -1087,7 +1169,7 @@ Player RiskState::CurrentPlayer() const{
 }
 
 bool RiskState::IsTerminal() const{
-   if (GetMaxElim() == kNumPlayers || GetTurns() >= kMaxTurns) {
+   if (GetMaxElim() == num_players_ || GetTurns() >= kMaxTurns) {
        return true;
    }
    return false;
@@ -1102,12 +1184,12 @@ bool RiskState::IsPlayerNode() const {
 }
 
 ActionsAndProbs RiskState::ChanceOutcomes() const {
-    return ActionsAndProbs{ std::make_pair(kPhseConstants[9], 1) };
+    return ActionsAndProbs{ std::make_pair(phse_constants[9], 1) };
 }
 
 std::vector<Action> RiskState::LegalChanceOutcomes() const{
     if (IsChanceNode()) {
-        return { kPhseConstants[9] };
+        return { num_distinct_actions_-1 };
    }
     else {
         return {};
@@ -1125,17 +1207,27 @@ std::unique_ptr<RiskState> RiskState::Clone() const {
     return std::unique_ptr<RiskState>(new RiskState(*this));
 }
 
-void RiskState::ObservationTensor(Player player,
-                                  absl::Span<float> values) const {
-  ContiguousAllocator allocator(values);
-  const RiskGame& game = open_spiel::down_cast<const RiskGame&>(*game_);
-  game.default_observer_->WriteTensor(*this, player, &allocator);
-}
 
 
 
 RiskGame::RiskGame(const GameParameters& params)
-    : Game(kGameType, params), num_players_(ParameterValue<int>("players")) {
+    : Game(kGameType, params), num_players_(ParameterValue<int>("players")),
+    map_type_(ParameterValue<int>("map_type")),
+    max_turns_(ParameterValue<int>("max_turns")),
+    rewards_(ParameterValue<std::vector<int>>("rewards")),
+    assist_(ParameterValue<std::vector<int>>("assist"))
+    abstraction_(ParameterValue<std::array<bool,4>>("abstraction")),
+    action_q_(ParameterValue<std::array<int,4>>("action_q"))
+{
+    if (map_type_ == 0) {
+        num_terrs_ =42;
+    }
+    else if (map_type_ == 1) {
+        num_terrs_ = 19;
+    }
+    num_distinct_actions_ = 5 * num_terrs_ + 4 + action_q_[0] + action_q_[1] + action_q_[2] + action_q_[3];
+    max_chance_nodes_in_history_ = 10000;//random big number bc idk
+    max_game_length_ = 100000;
   default_observer_ = std::make_shared<RiskObserver>(kDefaultObsType);
   private_observer_ = std::make_shared<RiskObserver>(
       IIGObservationType{.public_info = false,
@@ -1156,25 +1248,10 @@ std::vector<int> RiskGame::ObservationTensorShape() const {
   // One-hot encoding for the single private card. (n+1 cards = n+1 bits)
   // Followed by the contribution of each player to the pot (n).
   // n + n + 1 + n = 3n + 1.
-  return {2*kNumPlayers*kNumTerrs+5*kNumTerrs+2*kNumPlayers+kNumPlayers*kNumPlayers+14};
+    return {};
 }
 
-double RiskGame::MaxUtility() const {
-  // In poker, the utility is defined as the money a player has at the end
-  // of the game minus then money the player had before starting the game.
-  // Everyone puts a chip in at the start, and then they each have one more
-  // chip. Most that a player can gain is (#opponents)*2.
-  return (num_players_ - 1) * 2;
-}
-
-double RiskGame::MinUtility() const {
-  // In poker, the utility is defined as the money a player has at the end
-  // of the game minus then money the player had before starting the game.
-  // In Kuhn, the most any one player can lose is the single chip they paid
-  // to play and the single chip they paid to raise/call.
-  return -2;
-}
-
+   
 std::shared_ptr<Observer> RiskGame::MakeObserver(
     absl::optional<IIGObservationType> iig_obs_type,
     const GameParameters& params) const {

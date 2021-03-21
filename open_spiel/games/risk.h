@@ -179,7 +179,7 @@ class RiskState : public State {
   int starting_troops;
   std::vector<int> rewards;
   std::vector<int> assist;
-  std::array<int, 2 * kNumPlayers * kNumTerrs + 14 + 2 * kNumPlayers + kNumPlayers * kNumPlayers + 5 * kNumTerrs> board;
+  std::array<int, 2 * num_players_ * num_terrs_ + 14 + 2 * num_players_ + num_players_ * num_players_ + 5 * num_terrs_> board;
   std::array<std::array<bool,num_terrs_>,num_terrs_> adj_matrix;
   std::array<std::array<bool, num_terrs_>, num_terrs_> cont_matrix;
   std::array<int, num_continents> cont_bonus;

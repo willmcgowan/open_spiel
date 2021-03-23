@@ -36,17 +36,17 @@ namespace open_spiel {
         namespace {
 
             // Default parameters.
-            constexpr int kDefaultPlayers = 2;
-            constexpr std::vector<int> kDefaultAdj{ {0,2,11} ,{0,2,18},{ 3,16} ,{4,14,16},{5,7,14} ,{4,6,14,15},{5,7},{4,6,8},{7,9} ,{8,10} ,{11,12} ,{0,9,12},{10,11,13},{12,14,17,16},{3,4,5,13,15,16},{5,14},{2,3,13,14,17},{13,16,18},{17,1} };
-            constexpr std::vector<int> kDefaultCont{ {0,1} ,{2,3,4,16},{5,14,15},{6,7,8,9} , {10,11,12},{13,17,18} };
-            constexpr std::vector<int> kDefaultContBonus= { 1,5,3,3,2,2 };
-            constexpr int kDefaultMaxTurns = 90;
-            constexpr std::vector<int> kDefaultRewards = { -1,1 };
-            constexpr std::vector<int> kDefaultAssist = { 0,3 };
-            constexpr std::vector<bool> kDefaultAbstraction = { false,false,false,false };
-            constexpr std::vector<int> kDefaultActionQ = { 55,1000,1000,1000 };
-			constexpr std::array<int, 4> kDefaultCardArr = { 6,12,19,21 };
-			constexpr std::vector<std::string> kDefaultTerrNames = { "ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIETT","KILO","LIMA","MIKE","NOVEMBER","OSCAR","PAPA","QUEBEC","ROMEO","SIERRA" };
+            const int kDefaultPlayers = 2;
+            const std::vector<int> kDefaultAdj{ {0,2,11} ,{0,2,18},{ 3,16} ,{4,14,16},{5,7,14} ,{4,6,14,15},{5,7},{4,6,8},{7,9} ,{8,10} ,{11,12} ,{0,9,12},{10,11,13},{12,14,17,16},{3,4,5,13,15,16},{5,14},{2,3,13,14,17},{13,16,18},{17,1} };
+            const std::vector<int> kDefaultCont{ {0,1} ,{2,3,4,16},{5,14,15},{6,7,8,9} , {10,11,12},{13,17,18} };
+            const std::vector<int> kDefaultContBonus= { 1,5,3,3,2,2 };
+            const int kDefaultMaxTurns = 90;
+            const std::vector<int> kDefaultRewards = { -1,1 };
+            const std::vector<int> kDefaultAssist = { 0,3 };
+            const std::vector<bool> kDefaultAbstraction = { false,false,false,false };
+            const std::vector<int> kDefaultActionQ = { 55,1000,1000,1000 };
+			const std::array<int, 4> kDefaultCardArr = { 6,12,19,21 };
+			const std::vector<std::string> kDefaultTerrNames = { "ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIETT","KILO","LIMA","MIKE","NOVEMBER","OSCAR","PAPA","QUEBEC","ROMEO","SIERRA" };
 
 
 

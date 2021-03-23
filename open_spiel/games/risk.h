@@ -132,13 +132,13 @@ class RiskState : public State {
 
 class RiskGame : public Game {
  public:
-  explicit KuhnGame(const GameParameters& params);
+  explicit RiskGame(const GameParameters& params);
   int NumDistinctActions() const override { return num_distinct_actions_; }
   std::unique_ptr<State> NewInitialState() const override;
   int MaxChanceOutcomes() const override { return 1; }
   int NumPlayers() const override { return num_players_; }
-  double MinUtility() const override { return std::min(rewards_); };
-  double MaxUtility() const override { return std::max(rewards_); };
+  double MinUtility() const override { return rewards_[0]; };
+  double MaxUtility() const override { return rewards_[num_players_-1]; };
   double UtilitySum() const override { return 0; }
   std::vector<int> ObservationTensorShape() const override;
   int MaxGameLength() const override { return max_game_length_; }

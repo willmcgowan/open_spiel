@@ -1192,7 +1192,7 @@ void RiskState::ObservationTensor(Player player,
   game.default_observer_->WriteTensor(*this, player, &allocator);
 }
 
-std::unique_ptr<RiskState> RiskState::Clone() const {
+std::unique_ptr<State> RiskState::Clone() const {
     return std::unique_ptr<RiskState>(new RiskState(*this));
 }
 

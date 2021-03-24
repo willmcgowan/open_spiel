@@ -1246,6 +1246,9 @@ RiskGame::RiskGame(const GameParameters& params)
                          .perfect_recall = false,
                          .private_info = PrivateInfoType::kNone});
 }
+int RiskGame::MaxTurns() const {
+	return max_turns_;
+}
 std::vector<std::vector<int>> RiskGame::Adj() const{
 	return adj_;
 }

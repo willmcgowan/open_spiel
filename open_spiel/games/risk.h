@@ -200,6 +200,7 @@ class RiskGame : public Game {
   std::vector<int> ObservationTensorShape() const override;
   int MaxGameLength() const override { return max_game_length_; }
   int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_;}
+  int MaxTurns() const;
   std::vector<std::vector<int>> Adj() const;
   std::vector<std::vector<int>> Cont() const;
   std::vector<int> ContBonus() const;

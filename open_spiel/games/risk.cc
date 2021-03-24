@@ -1215,7 +1215,7 @@ RiskGame::RiskGame(const GameParameters& params)
 	std::array<int, 4> action_q_ = { dep_q_,atk_q_,redist_q_,fort_q_ };
 	std::array<bool, 4> abstraction_ = { dep_abs_,atk_abs_,redist_abs_,fort_abs_ };
 	num_distinct_actions_ = 4 + action_q_[0] + action_q_[1] + action_q_[2] + action_q_[3];
-	std::vector<std::vector<int>> reward_arr{ {-1,1},{-1,-1,2},{-1,-1,-1,3},{-1,-1,-1,-1,4},{-1,-1,-1,-1,-1,5} };
+	std::vector<std::vector<double>> reward_arr{ {-1,1},{-1,-1,2},{-1,-1,-1,3},{-1,-1,-1,-1,4},{-1,-1,-1,-1,-1,5} };
 	std::vector<std::vector<int>> assist_arr{ {0,3},{0,0,3},{0,0,1,3},{0,0,0,1,3},{0,0,0,1,2,3} };
 	if (map_ == 0) {
 		adj_{ {0,2,11} ,{0,2,18},{ 3,16} ,{4,14,16},{5,7,14} ,{4,6,14,15},{5,7},{4,6,8},{7,9} ,{8,10} ,{11,12} ,{0,9,12},{10,11,13},{12,14,17,16},{3,4,5,13,15,16},{5,14},{2,3,13,14,17},{13,16,18},{17,1} };

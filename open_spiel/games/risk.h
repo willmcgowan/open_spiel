@@ -98,6 +98,61 @@ class RiskState : public State {
  public:
   
   //internal methods//
+ void ResetPlayer();
+ void SetPlayer(int player);
+ void SetNextPlayer();
+ int GetPlayer() const;
+ int GetTurns() const;
+ void IncrementTurns(int increment);
+ void ResetPhse();
+ void SetPhse(int phse);
+ int GetPhse() const;
+ void SetIncome(int income);
+ int GetIncome() const;
+ void IncrementIncome(int increment) const;
+ void SetChance(int chance);
+ int GetChance() const;
+ void SetTerr(int coord, int player, int troops);
+ void IncrementTerr(int coord, int player, int increment);
+ void SetSucc(int val);
+ int GetSucc() const;
+ void ResetActions();
+ void SetCoord(int coord);
+ int GetCoord(int phse) const;
+ void SetAtkNum(int num);
+ int GetAtkNum() const;
+ void SetDeploy();
+ void SetAttack();
+ void SetRedistribute();
+ void SetFortify();
+ void SetCard(int player, int card_coord, int amount);
+ bool GetCard(int player, int card_coord) const;
+ void ResetHand(int player);
+ std::vector<bool> GetHand(int player) const;
+ std::vector<bool> GetHands() const;
+ std::vector<bool> GetCards() const;
+ int GetCardSig(int card_coord) const;
+ int GetHandSig(int player) const;
+ int GetHandSum(int player) const;
+ bool GetCashable(int player) const;
+ std::array<int, 3> GetSatCards(std::array<int, 3> component_arr) const;
+ int GetOwner(int coord) const;
+ std::vector<int> GetTroopArr(int player) const;
+ std::vector<bool> GetTroopMask(int player) const;
+ int GetEliminated(int player) const;
+ int GetMaxElim() const;
+ void EndTurn();
+ void Eliminate(int victim, int victor);
+ void Deal();
+ void Cash();
+ void Income();
+ void Deploy(int amount);
+ void Attack();
+ void Redistribute(int amount);
+ void Fortify(int amount);
+ void DepthFirstSearch(int player, int vertex, std::vector<bool>* out) const;
+ std::vector<int> GetAbstraction(int num, int abs) const;
+ int RetAbstraction(int action, int abs) const;
 
 
   //open spiel things//   
@@ -112,7 +167,9 @@ class RiskState : public State {
   std::vector<std::pair<Action, double>> ChanceOutcomes() const override;
   std::vector<Action> LegalChanceOutcomes() const override;
   std::vector<Action> LegalActions() const override;
- protected:
+ 
+
+protected:
   void DoApplyAction(Action move) override;
   int num_terrs_;
   int starting_troops_;
@@ -143,7 +200,15 @@ class RiskGame : public Game {
   std::vector<int> ObservationTensorShape() const override;
   int MaxGameLength() const override { return max_game_length_; }
   int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_;}
-  
+  std::vector<std::vector<int>> Adj();
+  std::vector<std::vector<int>> Cont();
+  std::vector<int> ContBonus();
+  std::vector<double> Rewards();
+  std::vector<int> Assist();
+  std::array<bool, 4> Abstraction();
+  std::array<int, 4> ActionQ();
+  std::array<int, 4> CardArr();
+  std::vector<std::string> TerrNames();
   std::shared_ptr<Observer> MakeObserver(
       absl::optional<IIGObservationType> iig_obs_type,
       const GameParameters& params) const override;
@@ -156,6 +221,15 @@ class RiskGame : public Game {
  private:
   // Number of players.
      int num_players_;
+     int map_type_;
+     bool dep_abs_;
+     bool atk_abs_;
+     bool redist_abs_;
+     bool fort_abs_;
+     int dep_q_;
+     int atk_q_:
+     int redist_q_;
+     int fort_q_;
      std::vector<std::vector<int>> adj_;
      std::vector<std::vector<int>> cont_;
      std::vector<int> cont_bonus_;

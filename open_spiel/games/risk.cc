@@ -36,17 +36,19 @@ namespace open_spiel {
         namespace {
 
             // Default parameters.
-            const int kDefaultPlayers = 2;
-            const std::vector<int> kDefaultAdj{ {0,2,11} ,{0,2,18},{ 3,16} ,{4,14,16},{5,7,14} ,{4,6,14,15},{5,7},{4,6,8},{7,9} ,{8,10} ,{11,12} ,{0,9,12},{10,11,13},{12,14,17,16},{3,4,5,13,15,16},{5,14},{2,3,13,14,17},{13,16,18},{17,1} };
-            const std::vector<int> kDefaultCont{ {0,1} ,{2,3,4,16},{5,14,15},{6,7,8,9} , {10,11,12},{13,17,18} };
-            const std::vector<int> kDefaultContBonus= { 1,5,3,3,2,2 };
-            const int kDefaultMaxTurns = 90;
-            const std::vector<int> kDefaultRewards = { -1,1 };
-            const std::vector<int> kDefaultAssist = { 0,3 };
-            const std::vector<bool> kDefaultAbstraction = { false,false,false,false };
-            const std::vector<int> kDefaultActionQ = { 55,1000,1000,1000 };
-			const std::array<int, 4> kDefaultCardArr = { 6,12,19,21 };
-			const std::vector<std::string> kDefaultTerrNames = { "ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIETT","KILO","LIMA","MIKE","NOVEMBER","OSCAR","PAPA","QUEBEC","ROMEO","SIERRA" };
+            constexpr int kDefaultPlayers = 2;
+			constexpr int kDefaultMap = 0;
+            constexpr int kDefaultMaxTurns = 90;
+			constexpr bool kDefaultDepAbs = 0;
+			constexpr bool kDefaultAtkAbs = 0;
+			constexpr bool kDefaultRedistAbs = 0;
+			constexpr bool kDefaultFortAbs = 0;
+			constexpr int kDefaultDepQ = 41;
+			constexpr int kDefaultAtkQ = 1000;
+			constexpr int kDefaultRedistQ = 1000;
+			constexpr int kDefaultFortQ = 1000;
+
+
 
 
 
@@ -66,9 +68,9 @@ namespace open_spiel {
                 /*provides_observation_string=*/false,
                 /*provides_observation_tensor=*/true,
                 /*parameter_specification=*/
-				 {{"players", GameParameter(kDefaultPlayers)},{"adj",GameParameter(kDefaultAdj)},{"cont",GameParameter(kDefaultCont)},{"cont_bonus",GameParameter(kDefaultContBonus},{"max_turns",GameParameter(kDefaultMaxTurns)},{"rewards",GameParameter(kDefaultRewards)},{"assist",GameParameter(kDefaultAssist)},{"abstraction",GameParameter(kDefaultAbstraction)},{"action_q",GameParameter(kDefaultActionQ},{"card_arr",GameParameter(kDefaultCardArr)},{"terr_names",GameParameter(kDefaultTerrNames}},
-                     /*default_loadable=*/true,
-                     /*provides_factored_observation_string=*/false,
+				 {{"players", GameParameter(kDefaultPlayers)},{"map",GameParameter(kDefaultMap)},{"max_turns",GameParameter(kDefaultMaxTurns)},{"dep_abs",GameParameter(kDefaultDepAbs)},{"atk_abs",GameParameter(kDefaultAtkAbs)},{"redist_abs",GameParameter(kDefaultRedistAbs)},{"fort_abs",GameParameter(kDefaultFortAbs)},{"dep_q",GameParameter(kDefaultDepQ)},{"atk_q",GameParameter(kDefaultAtkQ)},{"redist_q",GameParameter(kDefaultRedistQ)},{"fort_q",GameParameter(kDefaultFortQ)}},
+                 /*default_loadable=*/true,
+                 /*provides_factored_observation_string=*/false,
                      };
 
             std::shared_ptr<const Game> Factory(const GameParameters& params) {
@@ -175,9 +177,6 @@ namespace open_spiel {
 			SetIncome(1);
 			SetPlayer(0);
 			SetPhse(0);
-		}
-		int RiskState::MoveNumber() {
-			return move_number_;
 		}
 		void RiskState::ResetPlayer() {
 			for (int i = 0; i < num_players_; ++i) {
@@ -1202,18 +1201,38 @@ std::unique_ptr<RiskState> RiskState::Clone() const {
 
 RiskGame::RiskGame(const GameParameters& params)
     : Game(kGameType, params), num_players_(ParameterValue<int>("players")),
-    adj_(ParameterValue < std::vector<std::vector<int>>("adj")),
-    cont_(ParameterValue < std::vector<std::vector<int>>("cont"),
-    cont_bonus_(ParameterValue<std::vector<int>("cont_bonus")),
+    map_(ParameterValue<int>("map"),
     max_turns_(ParameterValue<int>("max_turns")),
-    rewards_(ParameterValue<std::vector<int>>("rewards")),
-    assist_(ParameterValue<std::vector<int>>("assist"))
-    abstraction_(ParameterValue<std::array<bool,4>>("abstraction")),
-    action_q_(ParameterValue<std::array<int,4>>("action_q")),
-	card_arr_(ParameterValue<std::array<int,4>>("card_arr")),
-	terr_names_(ParameterValue<std::vector<std::string>>("terr_names"))
+    dep_abs_(ParameterValue<bool>("dep_abs")),
+	dep_q_(ParameterValue<int>("dep_q")),
+	atk_abs_(ParameterValue<bool>("atk_abs")),
+	atk_q_(ParameterValue<int>("atk_q_")),
+	redist_abs_(ParameterValue<bool>("redist_abs")),
+	redist_q_(ParameterValue<int>("redist_q")),
+	fort_abs_(ParameterValue<bool>("fort_abs")),
+	fort_q_(ParameterValue<int>("fort_q"))
 {
-	num_distinct_actions_ = 4 + action_q[0] + action_q[1] + action_q[2] + action_q[3];
+	std::array<int, 4> action_q_ = { dep_q_,atk_q_,redist_q_,fort_q_ };
+	std::array<bool, 4> abstraction_ = { dep_abs_,atk_abs_,redist_abs_,fort_abs_ };
+	num_distinct_actions_ = 4 + action_q_[0] + action_q_[1] + action_q_[2] + action_q_[3];
+	std::vector<std::vector<int>> reward_arr{ {-1,1},{-1,-1,2},{-1,-1,-1,3},{-1,-1,-1,-1,4},{-1,-1,-1,-1,-1,5} };
+	std::vector<std::vector<int>> assist_arr{ {0,3},{0,0,3},{0,0,1,3},{0,0,0,1,3},{0,0,0,1,2,3} };
+	if (map_ == 0) {
+		adj_{ {0,2,11} ,{0,2,18},{ 3,16} ,{4,14,16},{5,7,14} ,{4,6,14,15},{5,7},{4,6,8},{7,9} ,{8,10} ,{11,12} ,{0,9,12},{10,11,13},{12,14,17,16},{3,4,5,13,15,16},{5,14},{2,3,13,14,17},{13,16,18},{17,1} };
+		cont_{ {0,1} ,{2,3,4,16},{5,14,15},{6,7,8,9} , {10,11,12},{13,17,18} };
+		cont_bonus_ = { 1,5,3,3,2,2 };
+		card_arr_ = { 6,12,19,21 };
+		terr_names_ = { "ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIETT","KILO","LIMA","MIKE","NOVEMBER","OSCAR","PAPA","QUEBEC","ROMEO","SIERRA" };
+	}
+	else if (map_ == 1) {
+		adj_{ {1, 2},{0, 2, 3},{0, 1, 3},{1, 2, 4},{3, 5, 6},{6, 7, 8, 10, 11},{4, 5, 8, 34},{5, 9, 11, 12, 14},{5, 6, 10, 40},{7, 14},{5, 8, 11, 40},{5, 7, 10, 12, 13},{7, 11, 13, 14},{11, 12, 14},{7, 9, 12, 13, 15},{14, 16, 20},{15, 17, 19, 20},{16, 18, 19, 38},{17, 19, 22},{16, 17, 18, 22, 21, 20},{15, 16, 19, 21},{19, 20, 22, 23},{18, 19, 21, 23},{21, 22, 24},{23, 25, 27},{24, 26, 27},{25, 27},{24, 25, 26, 28},{27, 29, 33, 35, 36},{28, 30, 32},{29, 31, 32},{30, 32},{29, 30, 33, 34},{28, 32, 34, 35},{6, 32, 33, 40},{28, 33, 34, 36, 40, 41},{28, 35, 37, 41},{36, 38, 39, 41},{37, 39},{37, 38, 40, 41},{8, 10, 34, 35, 39, 41},{35, 36, 37, 39, 40} };
+		cont_{ {0, 1, 2, 3},{4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 34},{15, 16, 17, 18, 19, 20, 21, 22, 23},{24, 25, 26, 27},{28, 29, 30, 31, 32, 33},{35, 36, 37, 38, 39, 40, 41} };
+		cont_bonus = { 2, 7, 5, 2, 3, 5 };
+		card_arr = { 14,28,42,44 };
+		terr_names_ = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
+	}
+	rewards_ = reward_arr[num_players_-2];
+	assist_ = assist_arr[num_players_ - 2];
 	num_distinct_actions_ += 5 * adj_.size();
     max_chance_nodes_in_history_ = 10000;//random big number bc idk
     max_game_length_ = 100000;

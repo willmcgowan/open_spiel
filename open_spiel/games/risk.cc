@@ -1249,6 +1249,9 @@ RiskGame::RiskGame(const GameParameters& params)
 int RiskGame::MaxTurns() const {
 	return max_turns_;
 }
+int RiskGame::NumTerrs() const {
+	return num_terrs_;
+}
 std::vector<std::vector<int>> RiskGame::Adj() const{
 	return adj_;
 }

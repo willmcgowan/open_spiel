@@ -156,7 +156,7 @@ class RiskState : public State {
 
 
   //open spiel things//   
-  explicit RiskState(std::shared_ptr<const Game> game);
+  explicit RiskState(std::shared_ptr<const RiskGame> game);
   RiskState(const RiskState&) = default;
   Player CurrentPlayer() const override;
   bool IsTerminal() const override;
@@ -201,6 +201,7 @@ class RiskGame : public Game {
   int MaxGameLength() const override { return max_game_length_; }
   int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_;}
   int MaxTurns() const;
+  int NumTerrs() const;
   std::vector<std::vector<int>> Adj() const;
   std::vector<std::vector<int>> Cont() const;
   std::vector<int> ContBonus() const;

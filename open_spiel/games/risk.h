@@ -109,7 +109,7 @@ class RiskState : public State {
  int GetPhse() const;
  void SetIncome(int income);
  int GetIncome() const;
- void IncrementIncome(int increment) const;
+ void IncrementIncome(int increment);
  void SetChance(int chance);
  int GetChance() const;
  void SetTerr(int coord, int player, int troops);
@@ -227,7 +227,7 @@ class RiskGame : public Game {
      bool redist_abs_;
      bool fort_abs_;
      int dep_q_;
-     int atk_q_:
+     int atk_q_;
      int redist_q_;
      int fort_q_;
      std::vector<std::vector<int>> adj_;

@@ -176,6 +176,7 @@ protected:
   void DoApplyAction(Action move) override;
   int num_terrs_;
   int starting_troops_;
+  int max_turns_;
   std::vector<double> rewards_;
   std::vector<int> assist_;
   std::vector<int> board;

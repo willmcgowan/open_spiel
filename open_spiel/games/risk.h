@@ -200,15 +200,15 @@ class RiskGame : public Game {
   std::vector<int> ObservationTensorShape() const override;
   int MaxGameLength() const override { return max_game_length_; }
   int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_;}
-  std::vector<std::vector<int>> Adj();
-  std::vector<std::vector<int>> Cont();
-  std::vector<int> ContBonus();
-  std::vector<double> Rewards();
-  std::vector<int> Assist();
-  std::array<bool, 4> Abstraction();
-  std::array<int, 4> ActionQ();
-  std::array<int, 4> CardArr();
-  std::vector<std::string> TerrNames();
+  std::vector<std::vector<int>> Adj() const;
+  std::vector<std::vector<int>> Cont() const;
+  std::vector<int> ContBonus() const;
+  std::vector<double> Rewards() const;
+  std::vector<int> Assist() const;
+  std::array<bool, 4> Abstraction() const;
+  std::array<int, 4> ActionQ() const;
+  std::array<int, 4> CardArr() const;
+  std::vector<std::string> TerrNames() const;
   std::shared_ptr<Observer> MakeObserver(
       absl::optional<IIGObservationType> iig_obs_type,
       const GameParameters& params) const override;

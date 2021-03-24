@@ -156,7 +156,7 @@ class RiskState : public State {
 
 
   //open spiel things//   
-  explicit RiskState(std::shared_ptr<const RiskGame> game);
+  explicit RiskState(std::shared_ptr<const Game> game);
   RiskState(const RiskState&) = default;
   Player CurrentPlayer() const override;
   bool IsTerminal() const override;
@@ -166,7 +166,7 @@ class RiskState : public State {
   bool IsPlayerNode() const override;
   void ObservationTensor(Player player,
                          absl::Span<float> values) const override;
-  std::unique_ptr<RiskState> Clone() const override;
+  std::unique_ptr<State> Clone() const override;
   std::vector<std::pair<Action, double>> ChanceOutcomes() const override;
   std::vector<Action> LegalChanceOutcomes() const override;
   std::vector<Action> LegalActions() const override;

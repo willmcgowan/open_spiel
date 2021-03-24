@@ -179,7 +179,7 @@ protected:
   std::vector<std::vector<bool>> adj_matrix_;
   std::vector<std::vector<bool>> cont_matrix_;
   std::vector<int> cont_bonus_;
-  std::array<int, 4> card_arr;
+  std::array<int, 4> card_arr_;
   std::array<bool, 4> abstraction_;
   std::array<int, 4> action_q_;//for no abstraction represents how many troops from 1 to that number that can be utilised, if abstraction then it represents number of bins
   std::array<int, 10> phse_constants_;

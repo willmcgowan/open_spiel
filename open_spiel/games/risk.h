@@ -166,7 +166,7 @@ class RiskState : public State {
   bool IsPlayerNode() const override;
   void ObservationTensor(Player player,
                          absl::Span<float> values) const override;
-  std::unique_ptr<State> Clone() const override;
+  std::unique_ptr<RiskState> Clone() const override;
   std::vector<std::pair<Action, double>> ChanceOutcomes() const override;
   std::vector<Action> LegalChanceOutcomes() const override;
   std::vector<Action> LegalActions() const override;

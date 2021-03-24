@@ -97,66 +97,66 @@ class RiskObserver;
 class RiskState : public State {
  public:
   
-  //internal methods//
- void ResetPlayer();
- void SetPlayer(int player);
- void SetNextPlayer();
- int GetPlayer() const;
- int GetTurns() const;
- void IncrementTurns(int increment);
- void ResetPhse();
- void SetPhse(int phse);
- int GetPhse() const;
- void SetIncome(int income);
- int GetIncome() const;
- void IncrementIncome(int increment);
- void SetChance(int chance);
- int GetChance() const;
- void SetTerr(int coord, int player, int troops);
- void IncrementTerr(int coord, int player, int increment);
- void SetSucc(int val);
- int GetSucc() const;
- void ResetActions();
- void SetCoord(int coord);
- int GetCoord(int phse) const;
- void SetAtkNum(int num);
- int GetAtkNum() const;
- void SetDeploy();
- void SetAttack();
- void SetRedistribute();
- void SetFortify();
- void SetCard(int player, int card_coord, int amount);
- bool GetCard(int player, int card_coord) const;
- void ResetHand(int player);
- std::vector<bool> GetHand(int player) const;
- std::vector<bool> GetHands() const;
- std::vector<bool> GetCards() const;
- int GetCardSig(int card_coord) const;
- int GetHandSig(int player) const;
- int GetHandSum(int player) const;
- bool GetCashable(int player) const;
- std::array<int, 3> GetSatCards(std::array<int, 3> component_arr) const;
- int GetOwner(int coord) const;
- std::vector<int> GetTroopArr(int player) const;
- std::vector<bool> GetTroopMask(int player) const;
- int GetEliminated(int player) const;
- int GetMaxElim() const;
- void EndTurn();
- void Eliminate(int victim, int victor);
- void Deal();
- void Cash();
- void Income();
- void Deploy(int amount);
- void Attack();
- void Redistribute(int amount);
- void Fortify(int amount);
- void DepthFirstSearch(int player, int vertex, std::vector<bool>* out) const;
- std::vector<int> GetAbstraction(int num, int abs) const;
- int RetAbstraction(int action, int abs) const;
+  //internal methods
+ void ResetPlayer();//resets all the player entries in board to 0
+ void SetPlayer(int player);//sets the player entry to 1
+ void SetNextPlayer();//sets the next player to 1 and sets all others to 0
+ int GetPlayer() const;//gets the current player
+ int GetTurns() const;// gets the current no of elapsed turns
+ void IncrementTurns(int increment);//increments the no of elapsed turns
+ void ResetPhse();//resets the current phse entry in board
+ void SetPhse(int phse);//sets the current phse entry in board
+ int GetPhse() const;//gets the current phse entry in board
+ void SetIncome(int income);//sets the income entry in board
+ int GetIncome() const;//gets the current income 
+ void IncrementIncome(int increment);//increments the current income
+ void SetChance(int chance);//sets the chance entry to chance
+ int GetChance() const;//gets the current chance entry
+ void SetTerr(int coord, int player, int troops);//sets a terr for a player to troops
+ void IncrementTerr(int coord, int player, int increment);//increments a terr for a player
+ void SetSucc(int val);//sets the successful attack entry to val
+ int GetSucc() const;//gets the successful attack entyr
+ void ResetActions();//resets all the action entries 
+ void SetCoord(int coord);//sets the coord in the correct place given the phase
+ int GetCoord(int phse) const;//gets the coord for a given phse
+ void SetAtkNum(int num);//sets the current atk num
+ int GetAtkNum() const;//gets the current atk num
+ void SetDeploy();//sets the board to deploy mode
+ void SetAttack();//sets the board to attack mode
+ void SetRedistribute();//sets the board to redist mode
+ void SetFortify();//sets the board to fortify mode
+ void SetCard(int player, int card_coord, int amount);//sets a card in a player's hand to amount
+ bool GetCard(int player, int card_coord) const;//gets a card in a player's hand
+ void ResetHand(int player);//resets a player's hand
+ std::vector<bool> GetHand(int player) const;//gets a player's hand
+ std::vector<bool> GetHands() const;//gets hands
+ std::vector<bool> GetCards() const;//gets all the cards held in hands
+ int GetCardSig(int card_coord) const;//gets the prime signature of a card
+ int GetHandSig(int player) const;//gets the product of the card signatures of hand of a player
+ int GetHandSum(int player) const;//gets the total num of cards in a player's hand
+ bool GetCashable(int player) const;//gets if a player's hand is cashable
+ std::array<int, 3> GetSatCards(std::array<int, 3> component_arr) const;//gets the cards to cash from a hand
+ int GetOwner(int coord) const;//gets the owner of a territory
+ std::vector<int> GetTroopArr(int player) const;//gets the troop array of a player
+ std::vector<bool> GetTroopMask(int player) const;//gets the troop mask of a player
+ int GetEliminated(int player) const;//gets the position a player was eliminated 0 for uneliminated 1 for 1st to be eliminated etc.
+ int GetMaxElim() const;//gets the total num of elims
+ void EndTurn();//ends the turn of the current player and mutates board accordingly
+ void Eliminate(int victim, int victor);//handles the player elimination process
+ void Deal();//handles the card dealing process
+ void Cash();//handles the card cashing process
+ void Income();//handles the income distrib process
+ void Deploy(int amount);//handles the act of deploying
+ void Attack();//handles the attack process
+ void Redistribute(int amount);//handles the redistrib process
+ void Fortify(int amount);//handles the fortify process
+ void DepthFirstSearch(int player, int vertex, std::vector<bool>* out) const;//used to determine legal fortifies given a chosen territory to fortify from//
+ std::vector<int> GetAbstraction(int num, int abs) const;//pretty hacky way to reduce number of actions
+ int RetAbstraction(int action, int abs) const;//ditto
 
 
   //open spiel things//   
-  explicit RiskState(std::shared_ptr<const Game> game);
+  explicit RiskState(std::shared_ptr<const RiskGame> game);
   RiskState(const RiskState&) = default;
   Player CurrentPlayer() const override;
   bool IsTerminal() const override;

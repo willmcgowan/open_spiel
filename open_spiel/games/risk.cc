@@ -144,7 +144,7 @@ namespace open_spiel {
         private:
             IIGObservationType iig_obs_type_;
             };
-		RiskState::RiskState(std::shared_ptr<Game> game) :num_players_(game->NumPlayers()),
+		RiskState::RiskState(std::shared_ptr<const Game> game) :num_players_(game->NumPlayers()),
 			State(game),  
 			num_distinct_actions_(game->NumDistinctActions()),
 			num_terrs_(game->NumTerrs()), max_turns_(game->MaxTurns()),

@@ -850,7 +850,7 @@ namespace open_spiel {
 		// OPENSPIEL METHODS BELOW //
 
 		//obviously the most costly func//
-		std::vector<Action> LegalActions() const {
+		std::vector<Action> RiskState::LegalActions() const {
 			std::vector<Action> res = {};
 			int player = GetPlayer();
 			if (GetChance() == 1) {

@@ -1246,31 +1246,31 @@ RiskGame::RiskGame(const GameParameters& params)
                          .perfect_recall = false,
                          .private_info = PrivateInfoType::kNone});
 }
-std::vector<std::vector<int>> RiskGame::Adj() {
+std::vector<std::vector<int>> RiskGame::Adj() const{
 	return adj_;
 }
-std::vector<std::vector<int>> RiskGame::Cont() {
+std::vector<std::vector<int>> RiskGame::Cont() const {
 	return cont_;
 }
-std::vector<int> RiskGame::ContBonus() {
+std::vector<int> RiskGame::ContBonus() const {
 	return cont_bonus_;
 }
-std::vector<double> RiskGame::Rewards() {
+std::vector<double> RiskGame::Rewards() const {
 	return rewards_;
 }
-std::vector<int> RiskGame::Assist() {
+std::vector<int> RiskGame::Assist() const{
 	return assist_;
 }
-std::array<bool, 4> RiskGame::Abstraction() {
+std::array<bool, 4> RiskGame::Abstraction() const{
 	return abstraction_;
 }
-std::array<int, 4> RiskGame::ActionQ() {
+std::array<int, 4> RiskGame::ActionQ() const{
 	return action_q_;
 }
-std::array<int, 4> RiskGame::CardArr() {
+std::array<int, 4> RiskGame::CardArr() const {
 	return card_arr_;
 }
-std::vector<std::string> RiskGame::TerrNames() {
+std::vector<std::string> RiskGame::TerrNames() const {
 	return terr_names_;
 }
 std::unique_ptr<State> RiskGame::NewInitialState() const {

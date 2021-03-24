@@ -161,6 +161,9 @@ class RiskState : public State {
   Player CurrentPlayer() const override;
   bool IsTerminal() const override;
   std::vector<double> Returns() const override;
+  std::vector<double> Rewards() const override;
+  bool IsChanceNode() const override;
+  bool IsPlayerNode() const override;
   void ObservationTensor(Player player,
                          absl::Span<float> values) const override;
   std::unique_ptr<State> Clone() const override;

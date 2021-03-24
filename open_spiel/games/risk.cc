@@ -1158,7 +1158,7 @@ Player RiskState::CurrentPlayer() const{
 }
 
 bool RiskState::IsTerminal() const{
-   if (GetMaxElim() == num_players_ || GetTurns() >= kMaxTurns) {
+   if (GetMaxElim() == num_players_ || GetTurns() >=max_turns_) {
        return true;
    }
    return false;

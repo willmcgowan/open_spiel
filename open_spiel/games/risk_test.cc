@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "open_spiel/games/kuhn_poker.h"
+#include "open_spiel/games/risk.h"
 
 #include "open_spiel/algorithms/get_all_states.h"
 #include "open_spiel/policy.h"

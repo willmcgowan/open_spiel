@@ -173,6 +173,7 @@ class RiskState : public State {
   std::string ToString() const override {
       return 0;
   }
+  std::string ActionToString(Player player, Action action_id) const override = 0;
  
 
 protected:

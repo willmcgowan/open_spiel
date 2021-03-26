@@ -198,7 +198,7 @@ protected:
 };
 
 class RiskGame : std::enable_shared_from_this<RiskGame>{
-public: Game{
+ :public Game{
  public:
   explicit RiskGame(const GameParameters & params);
   int NumDistinctActions() const override { return num_distinct_actions_; }

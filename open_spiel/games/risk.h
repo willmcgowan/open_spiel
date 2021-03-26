@@ -240,10 +240,11 @@ class RiskGame : public Game {
      std::vector<std::vector<int>> cont_;
      std::vector<int> cont_bonus_;
      int max_turns_;
+     int num_terrs_;
      int num_distinct_actions_;
      int max_chance_nodes_in_history_;
      int max_game_length_;
-     std::vector<int> rewards_;
+     std::vector<double> rewards_;
      std::vector<int> assist_;
      std::array<bool, 4> abstraction_;
      std::array<int, 4> action_q_;

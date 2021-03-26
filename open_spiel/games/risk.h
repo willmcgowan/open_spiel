@@ -197,19 +197,20 @@ protected:
   friend class RiskObserver;
 };
 
-class RiskGame : public Game {
+class RiskGame : std::enable_shared_from_this<RiskGame>{
+    public Game{
  public:
-  explicit RiskGame(const GameParameters& params);
+  explicit RiskGame(const GameParameters & params);
   int NumDistinctActions() const override { return num_distinct_actions_; }
   std::unique_ptr<State> NewInitialState() const override;
   int MaxChanceOutcomes() const override { return 1; }
   int NumPlayers() const override { return num_players_; }
   double MinUtility() const override { return rewards_[0]; };
-  double MaxUtility() const override { return rewards_[num_players_-1]; };
+  double MaxUtility() const override { return rewards_[num_players_ - 1]; };
   double UtilitySum() const override { return 0; }
   std::vector<int> ObservationTensorShape() const override;
   int MaxGameLength() const override { return max_game_length_; }
-  int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_;}
+  int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_; }
   int MaxTurns() const;
   int NumTerrs() const;
   std::vector<std::vector<int>> Adj() const;
@@ -231,32 +232,32 @@ class RiskGame : public Game {
   std::shared_ptr<RiskObserver> private_observer_;
 
  private:
-  // Number of players.
-     int num_players_;
-     int map_type_;
-     bool dep_abs_;
-     bool atk_abs_;
-     bool redist_abs_;
-     bool fort_abs_;
-     int dep_q_;
-     int atk_q_;
-     int redist_q_;
-     int fort_q_;
-     std::vector<std::vector<int>> adj_;
-     std::vector<std::vector<int>> cont_;
-     std::vector<int> cont_bonus_;
-     int max_turns_;
-     int num_terrs_;
-     int num_distinct_actions_;
-     int max_chance_nodes_in_history_;
-     int max_game_length_;
-     std::vector<double> rewards_;
-     std::vector<int> assist_;
-     std::array<bool, 4> abstraction_;
-     std::array<int, 4> action_q_;
-     std::array<int, 4> card_arr_;
-     std::vector<std::string> terr_names_;
-
+     // Number of players.
+        int num_players_;
+        int map_type_;
+        bool dep_abs_;
+        bool atk_abs_;
+        bool redist_abs_;
+        bool fort_abs_;
+        int dep_q_;
+        int atk_q_;
+        int redist_q_;
+        int fort_q_;
+        std::vector<std::vector<int>> adj_;
+        std::vector<std::vector<int>> cont_;
+        std::vector<int> cont_bonus_;
+        int max_turns_;
+        int num_terrs_;
+        int num_distinct_actions_;
+        int max_chance_nodes_in_history_;
+        int max_game_length_;
+        std::vector<double> rewards_;
+        std::vector<int> assist_;
+        std::array<bool, 4> abstraction_;
+        std::array<int, 4> action_q_;
+        std::array<int, 4> card_arr_;
+        std::vector<std::string> terr_names_;
+    }
 };
 }  // namespace risk
 }  // namespace open_spiel

@@ -1536,7 +1536,7 @@ namespace open_spiel
 			return terr_names_;
 		}
 		std::unique_ptr<State> RiskGame::NewInitialState() const {
-			return std::unique_ptr<State>(new RiskState(shared_from_this()));
+			return std::unique_ptr<State>(new RiskState(RiskGame shared_from_this()));
 		}
 
 		std::vector<int> RiskGame::ObservationTensorShape() const {

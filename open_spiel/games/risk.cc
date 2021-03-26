@@ -154,6 +154,14 @@ namespace open_spiel
 					}
 				}
 			}
+			std::string StringFrom(const State& observed_state,int player) const override {
+				const KuhnState& state =open_spiel::down_cast<const KuhnState&>(observed_state);
+				SPIEL_CHECK_GE(player, 0);
+				SPIEL_CHECK_LT(player, state.num_players_);
+				std::string result;
+				result = "";
+				return result;
+			}
 
 		private:
 			IIGObservationType iig_obs_type_;

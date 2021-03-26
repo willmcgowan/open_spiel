@@ -197,8 +197,7 @@ protected:
   friend class RiskObserver;
 };
 
-class RiskGame : std::enable_shared_from_this<RiskGame>{
- :public Game{
+class RiskGame :public Game{
  public:
   explicit RiskGame(const GameParameters & params);
   int NumDistinctActions() const override { return num_distinct_actions_; }
@@ -257,7 +256,6 @@ class RiskGame : std::enable_shared_from_this<RiskGame>{
         std::array<int, 4> action_q_;
         std::array<int, 4> card_arr_;
         std::vector<std::string> terr_names_;
-    }
 };
 }  // namespace risk
 }  // namespace open_spiel

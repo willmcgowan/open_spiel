@@ -32,7 +32,8 @@
 
 //might need to change the current chance action id to zero etc for reasons//
 namespace open_spiel {
-    namespace risk {
+
+namespace risk {
         namespace {
 
             // Default parameters.
@@ -144,15 +145,16 @@ namespace open_spiel {
         private:
             IIGObservationType iig_obs_type_;
             };
-		RiskState::RiskState(std::shared_ptr<const RiskGame> game) :num_players_(game->NumPlayers()),
+		RiskState::RiskState(std::shared_ptr<const RiskGame> game) :
 			State(game),  
-			num_distinct_actions_(game->NumDistinctActions()),
 			num_terrs_(game->NumTerrs()), max_turns_(game->MaxTurns()),
 			cont_bonus_(game->ContBonus()), assist_(game->Assist()),
 			rewards_(game->Rewards()), card_arr_(game->CardArr()),
-			abstraction_(game->Abstraction()), action_q_(game->ActionQ()),
-			game_(game)
+			abstraction_(game->Abstraction()), action_q_(game->ActionQ())
 		{
+			num_players_ = game->NumPlayers();
+			num_distinct_actions_ = game->NumDistinctActions();
+			game_ = game;
 			board = std::vector<int>(2 * num_players_ * num_terrs_ + 14 + 2 * num_players_ + num_players_ * num_players_ + 5 * num_terrs_, 0);
 			adj_matrix_ = AdjMatrixer(game->Adj());
 			cont_matrix_ = ContMatrixer(game->Cont(), num_terrs_);
@@ -528,7 +530,6 @@ namespace open_spiel {
 			return max;
 		}
 
-
 		void RiskState::EndTurn() {
 			if (GetSucc() == 1) {
 				SetChance(1);
@@ -800,7 +801,6 @@ namespace open_spiel {
 			IncrementTerr(coord_from, player, -amount);
 			EndTurn();
 		}
-
 
 		//populate above with all necessary asserts/
 
@@ -1107,197 +1107,196 @@ namespace open_spiel {
 			move_number_ += 1;
 		}
         
-
-
-
-std::vector<double> RiskState::Rewards() const {
-	assert(IsTerminal());
-	std::vector<double> res = { };
-	std::vector<int> arr(num_players_, 0);
-	int split = 0;
-	int split_rewards = 0;
-	for (int i = 0; i < num_players_; ++i) {
-		arr[i] = GetEliminated(i);
-		if (arr[i] == 0) {
-			split_rewards += rewards_[num_players_ - split - 1];
-			split += 1;
+		std::vector<double> RiskState::Rewards() const {
+			assert(IsTerminal());
+			std::vector<double> res = { };
+			std::vector<int> arr(num_players_, 0);
+			int split = 0;
+			int split_rewards = 0;
+			for (int i = 0; i < num_players_; ++i) {
+				arr[i] = GetEliminated(i);
+				if (arr[i] == 0) {
+					split_rewards += rewards_[num_players_ - split - 1];
+					split += 1;
+				}
+			}
+			double split_reward = (double)split_rewards / split;
+			for (int i = 0; i < num_players_; ++i) {
+				if (arr[i] != 0) {
+					res.push_back(rewards_[arr[i] - 1]);
+				}
+				else {
+					res.push_back(split_reward);
+				}
+			}
+			return res;
 		}
-	}
-	double split_reward = (double)split_rewards / split;
-	for (int i = 0; i < num_players_; ++i) {
-		if (arr[i] != 0) {
-			res.push_back(rewards_[arr[i] - 1]);
+
+		std::vector<double> RiskState::Returns() const {
+			if (!IsTerminal()) {
+				std::vector<double> res = {};
+				for (int i = 0; i < num_players_ ; ++i) {
+					res.push_back(0);
+				}
+				return res;
+			}
+			else {
+				return Rewards();
+			}
 		}
-		else {
-			res.push_back(split_reward);
+
+		Player RiskState::CurrentPlayer() const{
+			if (GetChance()) {
+				return kChancePlayerId;
+			}
+			else {
+				return GetPlayer();
+			}
 		}
-	}
-	return res;
-}
 
-std::vector<double> RiskState::Returns() const {
-    if (!IsTerminal()) {
-        std::vector<double> res = {};
-        for (int i = 0; i < num_players_ ; ++i) {
-            res.push_back(0);
-        }
-        return res;
-    }
-    else {
-        return Rewards();
-    }
-}
+		bool RiskState::IsTerminal() const{
+		if (GetMaxElim() == num_players_ || GetTurns() >=max_turns_) {
+			return true;
+		}
+		return false;
+		}
 
-Player RiskState::CurrentPlayer() const{
-    if (GetChance()) {
-        return kChancePlayerId;
-    }
-    else {
-        return GetPlayer();
-    }
-}
+		bool RiskState::IsChanceNode() const{
+			return(CurrentPlayer() == -1);
+		}
 
-bool RiskState::IsTerminal() const{
-   if (GetMaxElim() == num_players_ || GetTurns() >=max_turns_) {
-       return true;
-   }
-   return false;
-}
+		bool RiskState::IsPlayerNode() const {
+			return (CurrentPlayer() >= 0);
+		}
 
-bool RiskState::IsChanceNode() const{
-    return(CurrentPlayer() == -1);
-}
+		ActionsAndProbs RiskState::ChanceOutcomes() const {
+			return ActionsAndProbs{ std::make_pair(0, 1) };
+		}
 
-bool RiskState::IsPlayerNode() const {
-    return (CurrentPlayer() >= 0);
-}
+		std::vector<Action> RiskState::LegalChanceOutcomes() const{
+			if (IsChanceNode()) {
+				return { 0 };
+		}
+			else {
+				return {};
+			}
+		}
 
-ActionsAndProbs RiskState::ChanceOutcomes() const {
-    return ActionsAndProbs{ std::make_pair(0, 1) };
-}
+		void RiskState::ObservationTensor(Player player,
+										absl::Span<float> values) const {
+			ContiguousAllocator allocator(values);
+			const RiskGame& game = open_spiel::down_cast<const RiskGame&>(*game_);
+			game.default_observer_->WriteTensor(*this, player, &allocator);
+		}
 
-std::vector<Action> RiskState::LegalChanceOutcomes() const{
-    if (IsChanceNode()) {
-        return { 0 };
-   }
-    else {
-        return {};
-    }
-}
-
-void RiskState::ObservationTensor(Player player,
-                                  absl::Span<float> values) const {
-  ContiguousAllocator allocator(values);
-  const RiskGame& game = open_spiel::down_cast<const RiskGame&>(*game_);
-  game.default_observer_->WriteTensor(*this, player, &allocator);
-}
-
-std::unique_ptr<State> RiskState::Clone() const {
-    return std::unique_ptr<RiskState>(new RiskState(*this));
-}
+		std::unique_ptr<State> RiskState::Clone() const {
+			return std::unique_ptr<RiskState>(new RiskState(*this));
+		}
 
 
 
 
-RiskGame::RiskGame(const GameParameters& params)
-    : Game(kGameType, params), num_players_(ParameterValue<int>("players")),
-    map_(ParameterValue<int>("map"),
-    max_turns_(ParameterValue<int>("max_turns")),
-    dep_abs_(ParameterValue<bool>("dep_abs")),
-	dep_q_(ParameterValue<int>("dep_q")),
-	atk_abs_(ParameterValue<bool>("atk_abs")),
-	atk_q_(ParameterValue<int>("atk_q_")),
-	redist_abs_(ParameterValue<bool>("redist_abs")),
-	redist_q_(ParameterValue<int>("redist_q")),
-	fort_abs_(ParameterValue<bool>("fort_abs")),
-	fort_q_(ParameterValue<int>("fort_q"))
-{
-	std::array<int, 4> action_q_ = { dep_q_,atk_q_,redist_q_,fort_q_ };
-	std::array<bool, 4> abstraction_ = { dep_abs_,atk_abs_,redist_abs_,fort_abs_ };
-	num_distinct_actions_ = 4 + action_q_[0] + action_q_[1] + action_q_[2] + action_q_[3];
-	std::vector<std::vector<double>> reward_arr{ {-1,1},{-1,-1,2},{-1,-1,-1,3},{-1,-1,-1,-1,4},{-1,-1,-1,-1,-1,5} };
-	std::vector<std::vector<int>> assist_arr{ {0,3},{0,0,3},{0,0,1,3},{0,0,0,1,3},{0,0,0,1,2,3} };
-	if (map_ == 0) {
-		adj_{ {0,2,11} ,{0,2,18},{ 3,16} ,{4,14,16},{5,7,14} ,{4,6,14,15},{5,7},{4,6,8},{7,9} ,{8,10} ,{11,12} ,{0,9,12},{10,11,13},{12,14,17,16},{3,4,5,13,15,16},{5,14},{2,3,13,14,17},{13,16,18},{17,1} };
-		cont_{ {0,1} ,{2,3,4,16},{5,14,15},{6,7,8,9} , {10,11,12},{13,17,18} };
-		cont_bonus_ = { 1,5,3,3,2,2 };
-		card_arr_ = { 6,12,19,21 };
-		terr_names_ = { "ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIETT","KILO","LIMA","MIKE","NOVEMBER","OSCAR","PAPA","QUEBEC","ROMEO","SIERRA" };
-	}
-	else if (map_ == 1) {
-		adj_{ {1, 2},{0, 2, 3},{0, 1, 3},{1, 2, 4},{3, 5, 6},{6, 7, 8, 10, 11},{4, 5, 8, 34},{5, 9, 11, 12, 14},{5, 6, 10, 40},{7, 14},{5, 8, 11, 40},{5, 7, 10, 12, 13},{7, 11, 13, 14},{11, 12, 14},{7, 9, 12, 13, 15},{14, 16, 20},{15, 17, 19, 20},{16, 18, 19, 38},{17, 19, 22},{16, 17, 18, 22, 21, 20},{15, 16, 19, 21},{19, 20, 22, 23},{18, 19, 21, 23},{21, 22, 24},{23, 25, 27},{24, 26, 27},{25, 27},{24, 25, 26, 28},{27, 29, 33, 35, 36},{28, 30, 32},{29, 31, 32},{30, 32},{29, 30, 33, 34},{28, 32, 34, 35},{6, 32, 33, 40},{28, 33, 34, 36, 40, 41},{28, 35, 37, 41},{36, 38, 39, 41},{37, 39},{37, 38, 40, 41},{8, 10, 34, 35, 39, 41},{35, 36, 37, 39, 40} };
-		cont_{ {0, 1, 2, 3},{4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 34},{15, 16, 17, 18, 19, 20, 21, 22, 23},{24, 25, 26, 27},{28, 29, 30, 31, 32, 33},{35, 36, 37, 38, 39, 40, 41} };
-		cont_bonus = { 2, 7, 5, 2, 3, 5 };
-		card_arr_ = { 14,28,42,44 };
-		terr_names_ = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
-	}
-	rewards_ = reward_arr[num_players_-2];
-	assist_ = assist_arr[num_players_ - 2];
-	num_distinct_actions_ += 5 * adj_.size();
-    max_chance_nodes_in_history_ = 10000;//random big number bc idk
-    max_game_length_ = 100000;
-  default_observer_ = std::make_shared<RiskObserver>(kDefaultObsType);
-  private_observer_ = std::make_shared<RiskObserver>(
-      IIGObservationType{.public_info = false,
-                         .perfect_recall = false,
-                         .private_info = PrivateInfoType::kSinglePlayer});
-  public_observer_ = std::make_shared<RiskObserver>(
-      IIGObservationType{.public_info = true,
-                         .perfect_recall = false,
-                         .private_info = PrivateInfoType::kNone});
-}
-int RiskGame::MaxTurns() const {
-	return max_turns_;
-}
-int RiskGame::NumTerrs() const {
-	return num_terrs_;
-}
-std::vector<std::vector<int>> RiskGame::Adj() const{
-	return adj_;
-}
-std::vector<std::vector<int>> RiskGame::Cont() const {
-	return cont_;
-}
-std::vector<int> RiskGame::ContBonus() const {
-	return cont_bonus_;
-}
-std::vector<double> RiskGame::Rewards() const {
-	return rewards_;
-}
-std::vector<int> RiskGame::Assist() const{
-	return assist_;
-}
-std::array<bool, 4> RiskGame::Abstraction() const{
-	return abstraction_;
-}
-std::array<int, 4> RiskGame::ActionQ() const{
-	return action_q_;
-}
-std::array<int, 4> RiskGame::CardArr() const {
-	return card_arr_;
-}
-std::vector<std::string> RiskGame::TerrNames() const {
-	return terr_names_;
-}
-std::unique_ptr<State> RiskGame::NewInitialState() const {
-  return std::unique_ptr<State>(new RiskState(shared_from_this()));
-}
+		RiskGame::RiskGame(const GameParameters& params)
+			: Game(kGameType, params), num_players_(ParameterValue<int>("players")),
+			map_(ParameterValue<int>("map"),
+			max_turns_(ParameterValue<int>("max_turns")),
+			dep_abs_(ParameterValue<bool>("dep_abs")),
+			dep_q_(ParameterValue<int>("dep_q")),
+			atk_abs_(ParameterValue<bool>("atk_abs")),
+			atk_q_(ParameterValue<int>("atk_q_")),
+			redist_abs_(ParameterValue<bool>("redist_abs")),
+			redist_q_(ParameterValue<int>("redist_q")),
+			fort_abs_(ParameterValue<bool>("fort_abs")),
+			fort_q_(ParameterValue<int>("fort_q"))
+		{
+			std::array<int, 4> action_q_ = { dep_q_,atk_q_,redist_q_,fort_q_ };
+			std::array<bool, 4> abstraction_ = { dep_abs_,atk_abs_,redist_abs_,fort_abs_ };
+			num_distinct_actions_ = 4 + action_q_[0] + action_q_[1] + action_q_[2] + action_q_[3];
+			std::vector<std::vector<double>> reward_arr{ {-1,1},{-1,-1,2},{-1,-1,-1,3},{-1,-1,-1,-1,4},{-1,-1,-1,-1,-1,5} };
+			std::vector<std::vector<int>> assist_arr{ {0,3},{0,0,3},{0,0,1,3},{0,0,0,1,3},{0,0,0,1,2,3} };
+			if (map_ == 0) {
+				adj_{ {0,2,11} ,{0,2,18},{ 3,16} ,{4,14,16},{5,7,14} ,{4,6,14,15},{5,7},{4,6,8},{7,9} ,{8,10} ,{11,12} ,{0,9,12},{10,11,13},{12,14,17,16},{3,4,5,13,15,16},{5,14},{2,3,13,14,17},{13,16,18},{17,1} };
+				cont_{ {0,1} ,{2,3,4,16},{5,14,15},{6,7,8,9} , {10,11,12},{13,17,18} };
+				cont_bonus_ = { 1,5,3,3,2,2 };
+				card_arr_ = { 6,12,19,21 };
+				terr_names_ = { "ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIETT","KILO","LIMA","MIKE","NOVEMBER","OSCAR","PAPA","QUEBEC","ROMEO","SIERRA" };
+			}
+			else if (map_ == 1) {
+				adj_{ {1, 2},{0, 2, 3},{0, 1, 3},{1, 2, 4},{3, 5, 6},{6, 7, 8, 10, 11},{4, 5, 8, 34},{5, 9, 11, 12, 14},{5, 6, 10, 40},{7, 14},{5, 8, 11, 40},{5, 7, 10, 12, 13},{7, 11, 13, 14},{11, 12, 14},{7, 9, 12, 13, 15},{14, 16, 20},{15, 17, 19, 20},{16, 18, 19, 38},{17, 19, 22},{16, 17, 18, 22, 21, 20},{15, 16, 19, 21},{19, 20, 22, 23},{18, 19, 21, 23},{21, 22, 24},{23, 25, 27},{24, 26, 27},{25, 27},{24, 25, 26, 28},{27, 29, 33, 35, 36},{28, 30, 32},{29, 31, 32},{30, 32},{29, 30, 33, 34},{28, 32, 34, 35},{6, 32, 33, 40},{28, 33, 34, 36, 40, 41},{28, 35, 37, 41},{36, 38, 39, 41},{37, 39},{37, 38, 40, 41},{8, 10, 34, 35, 39, 41},{35, 36, 37, 39, 40} };
+				cont_{ {0, 1, 2, 3},{4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 34},{15, 16, 17, 18, 19, 20, 21, 22, 23},{24, 25, 26, 27},{28, 29, 30, 31, 32, 33},{35, 36, 37, 38, 39, 40, 41} };
+				cont_bonus = { 2, 7, 5, 2, 3, 5 };
+				card_arr_ = { 14,28,42,44 };
+				terr_names_ = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
+			}
+			rewards_ = reward_arr[num_players_-2];
+			assist_ = assist_arr[num_players_ - 2];
+			num_distinct_actions_ += 5 * adj_.size();
+			max_chance_nodes_in_history_ = 10000;//random big number bc idk
+			max_game_length_ = 100000;
+		default_observer_ = std::make_shared<RiskObserver>(kDefaultObsType);
+		private_observer_ = std::make_shared<RiskObserver>(
+			IIGObservationType{.public_info = false,
+								.perfect_recall = false,
+								.private_info = PrivateInfoType::kSinglePlayer});
+		public_observer_ = std::make_shared<RiskObserver>(
+			IIGObservationType{.public_info = true,
+								.perfect_recall = false,
+								.private_info = PrivateInfoType::kNone});
+		}
+		int RiskGame::MaxTurns() const {
+			return max_turns_;
+		}
+		int RiskGame::NumTerrs() const {
+			return num_terrs_;
+		}
+		std::vector<std::vector<int>> RiskGame::Adj() const{
+			return adj_;
+		}
+		std::vector<std::vector<int>> RiskGame::Cont() const {
+			return cont_;
+		}
+		std::vector<int> RiskGame::ContBonus() const {
+			return cont_bonus_;
+		}
+		std::vector<double> RiskGame::Rewards() const {
+			return rewards_;
+		}
+		std::vector<int> RiskGame::Assist() const{
+			return assist_;
+		}
+		std::array<bool, 4> RiskGame::Abstraction() const{
+			return abstraction_;
+		}
+		std::array<int, 4> RiskGame::ActionQ() const{
+			return action_q_;
+		}
+		std::array<int, 4> RiskGame::CardArr() const {
+			return card_arr_;
+		}
+		std::vector<std::string> RiskGame::TerrNames() const {
+			return terr_names_;
+		}
+		std::unique_ptr<State> RiskGame::NewInitialState() const {
+		return std::unique_ptr<State>(new RiskState(shared_from_this()));
+		}
 
-std::vector<int> RiskGame::ObservationTensorShape() const {
-  // One-hot for whose turn it is.
-  // One-hot encoding for the single private card. (n+1 cards = n+1 bits)
-  // Followed by the contribution of each player to the pot (n).
-  // n + n + 1 + n = 3n + 1.
-    return { num_players_ * num_terrs_ + 2 * num_players_ + 16 + 6 * num_terrs_ + num_players_*(num_players_ - 1) };
-}
+		std::vector<int> RiskGame::ObservationTensorShape() const {
+		// One-hot for whose turn it is.
+		// One-hot encoding for the single private card. (n+1 cards = n+1 bits)
+		// Followed by the contribution of each player to the pot (n).
+		// n + n + 1 + n = 3n + 1.
+			return { num_players_ * num_terrs_ + 2 * num_players_ + 16 + 6 * num_terrs_ + num_players_*(num_players_ - 1) };
+		}
 
 
-std::shared_ptr<Observer> RiskGame::MakeObserver(
-    absl::optional<IIGObservationType> iig_obs_type,
-    const GameParameters& params) const {
-  if (!params.empty()) SpielFatalError("Observation params not supported");
-  return std::make_shared<RiskObserver>(iig_obs_type.value_or(kDefaultObsType));
-}
+		std::shared_ptr<Observer> RiskGame::MakeObserver(
+			absl::optional<IIGObservationType> iig_obs_type,
+			const GameParameters& params) const {
+		if (!params.empty()) SpielFatalError("Observation params not supported");
+		return std::make_shared<RiskObserver>(iig_obs_type.value_or(kDefaultObsType));
+		}
 
-}  // namespace risk
+	}  // namespace risk
+
+
 }  // namespace open_spiel

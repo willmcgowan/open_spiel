@@ -36,16 +36,16 @@ void BasicRiskTests() {
 		std::vector<int> action_q0 = { 55,1000,1000,1000 };
 		std::vector<int> action_q1 = { 5,1,1,1 };
 		int max_turns=90-(i-2)*5;
-		testing:::RandomSimTest(
+		testing::RandomSimTest(
 			*LoadGame("risk", { {"players", GameParameter(i)},{"map",GameParameter(0)},{"max_turns",GameParameter(max_turns)},{"dep_abs",GameParameter(abstraction0[0])} ,{"atk_abs",GameParameter(abstraction0[1])},{"redist_abs",GameParameter(abstraction0[2])},{"fort_abs",GameParameter(abstraction0[3])},{"dep_q",GameParameter(action_q0[0])},{"atk_q",GameParameter(action_q0[1])},{"redist_q",GameParameter(action_q0[2])},{"fort_q",GameParameter(action_q0[3])} }), 100);
 
-		testing:::RandomSimTest(
+		testing::RandomSimTest(
 			*LoadGame("risk", { {"players", GameParameter(i)},{"map",GameParameter(0)},{"max_turns",GameParameter(max_turns)},{"dep_abs",GameParameter(abstraction1[0])} ,{"atk_abs",GameParameter(abstraction1[1])},{"redist_abs",GameParameter(abstraction1[2])},{"fort_abs",GameParameter(abstraction1[3])},{"dep_q",GameParameter(action_q1[0])},{"atk_q",GameParameter(action_q1[1])},{"redist_q",GameParameter(action_q1[2])},{"fort_q",GameParameter(action_q1[3])}}), 100);
 
-		testing:::RandomSimTest(
+		testing::RandomSimTest(
 			*LoadGame("risk", { {"players", GameParameter(i)},{"map",GameParameter(1)},{"max_turns",GameParameter(max_turns)},{"dep_abs",GameParameter(abstraction0[0])} ,{"atk_abs",GameParameter(abstraction0[1])},{"redist_abs",GameParameter(abstraction0[2])},{"fort_abs",GameParameter(abstraction0[3])},{"dep_q",GameParameter(action_q0[0])},{"atk_q",GameParameter(action_q0[1])},{"redist_q",GameParameter(action_q0[2])},{"fort_q",GameParameter(action_q0[3])} }), 100);
 
-		testing:::RandomSimTest(
+		testing::RandomSimTest(
 			*LoadGame("risk", { {"players", GameParameter(i)},{"map",GameParameter(0)},{"max_turns",GameParameter(max_turns)},{"dep_abs",GameParameter(abstraction1[0])} ,{"atk_abs",GameParameter(abstraction1[1])},{"redist_abs",GameParameter(abstraction1[2])},{"fort_abs",GameParameter(abstraction1[3])},{"dep_q",GameParameter(action_q1[0])},{"atk_q",GameParameter(action_q1[1])},{"redist_q",GameParameter(action_q1[2])},{"fort_q",GameParameter(action_q1[3])} }), 100);
 		}
 		

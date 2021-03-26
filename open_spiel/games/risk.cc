@@ -1457,7 +1457,7 @@ namespace open_spiel
 			dep_abs_(ParameterValue<bool>("dep_abs")),
 			dep_q_(ParameterValue<int>("dep_q")),
 			atk_abs_(ParameterValue<bool>("atk_abs")),
-			atk_q_(ParameterValue<int>("atk_q_")),
+			atk_q_(ParameterValue<int>("atk_q")),
 			redist_abs_(ParameterValue<bool>("redist_abs")),
 			redist_q_(ParameterValue<int>("redist_q")),
 			fort_abs_(ParameterValue<bool>("fort_abs")),

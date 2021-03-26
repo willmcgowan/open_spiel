@@ -55,5 +55,5 @@ void BasicRiskTests() {
 }  // namespace open_spiel
 
 int main(int argc, char **argv) {
-  open_spiel::kuhn_poker::BasicRiskTests();
+  open_spiel::risk::BasicRiskTests();
 }

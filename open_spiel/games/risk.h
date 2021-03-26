@@ -170,6 +170,9 @@ class RiskState : public State {
   std::vector<std::pair<Action, double>> ChanceOutcomes() const override;
   std::vector<Action> LegalChanceOutcomes() const override;
   std::vector<Action> LegalActions() const override;
+  std::string ToString() const override {
+      return 0;
+  }
  
 
 protected:

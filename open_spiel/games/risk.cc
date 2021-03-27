@@ -1476,6 +1476,7 @@ namespace open_spiel
 				cont_bonus_ = {1, 5, 3, 3, 2, 2};
 				card_arr_ = {6, 12, 19, 21};
 				terr_names_ = {"ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "GOLF", "HOTEL", "INDIA", "JULIETT", "KILO", "LIMA", "MIKE", "NOVEMBER", "OSCAR", "PAPA", "QUEBEC", "ROMEO", "SIERRA"};
+                num_terrs_ = 19;
 			}
 			else if (map_ == 1)
 			{
@@ -1484,6 +1485,7 @@ namespace open_spiel
 				cont_bonus_ = {2, 7, 5, 2, 3, 5};
 				card_arr_ = {14, 28, 42, 44};
 				terr_names_ = {"East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe"};
+                num_terrs_=42;
 			}
 			rewards_ = reward_arr[num_players_ - 2];
 			assist_ = assist_arr[num_players_ - 2];

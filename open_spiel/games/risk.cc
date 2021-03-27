@@ -41,10 +41,10 @@ namespace open_spiel
 			constexpr int kDefaultPlayers = 2;
 			constexpr int kDefaultMap = 0;
 			constexpr int kDefaultMaxTurns = 90;
-			constexpr bool kDefaultDepAbs = 0;
-			constexpr bool kDefaultAtkAbs = 0;
-			constexpr bool kDefaultRedistAbs = 0;
-			constexpr bool kDefaultFortAbs = 0;
+			constexpr bool kDefaultDepAbs = false;
+			constexpr bool kDefaultAtkAbs = false;
+			constexpr bool kDefaultRedistAbs = false;
+			constexpr bool kDefaultFortAbs = false;
 			constexpr int kDefaultDepQ = 41;
 			constexpr int kDefaultAtkQ = 1000;
 			constexpr int kDefaultRedistQ = 1000;

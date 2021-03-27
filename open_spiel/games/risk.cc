@@ -19,6 +19,7 @@
 #include <array>
 #include <string>
 #include <utility>
+#include <iostream>
 
 #include "open_spiel/abseil-cpp/absl/strings/str_cat.h"
 #include "open_spiel/fog/fog_constants.h"
@@ -115,6 +116,7 @@ namespace open_spiel
 			void WriteTensor(const State &observed_state, int player,
 							 Allocator *allocator) const override
 			{
+                std::cout<<"Observer:WriteTensor \n";
 				const RiskState &state =
 					open_spiel::down_cast<const RiskState &>(observed_state);
 				SPIEL_CHECK_GE(player, 0);
@@ -172,6 +174,7 @@ namespace open_spiel
 																	 rewards_(game->Rewards()), card_arr_(game->CardArr()),
 																	 abstraction_(game->Abstraction()), action_q_(game->ActionQ())
 		{
+            std::cout <<"State:State \n";
 			num_players_ = game->NumPlayers();
 			num_distinct_actions_ = game->NumDistinctActions();
 			game_ = game;
@@ -211,6 +214,7 @@ namespace open_spiel
 
 		void RiskState::SetPlayer(int player)
 		{
+            std::cout<<"State:SetPlayer \n";
 			ResetPlayer();
 			board[num_players_ * num_terrs_ + player] = 1;
 		}
@@ -258,6 +262,7 @@ namespace open_spiel
 
 		void RiskState::SetPhse(int phse)
 		{
+            std::cout<<"State:SetPhse \n";
 			ResetPhse();
 			board[num_players_ * num_terrs_ + num_players_ + 1 + phse] = 1;
 		}
@@ -276,6 +281,7 @@ namespace open_spiel
 
 		void RiskState::SetIncome(int income)
 		{
+            std::cout<<"State:SetIncome \n";
 			board[num_players_ * num_terrs_ + num_players_ + 2 + 9] = income;
 		}
 
@@ -1020,6 +1026,7 @@ namespace open_spiel
 		//obviously the most costly func//
 		std::vector<Action> RiskState::LegalActions() const
 		{
+            std::cout << "State:LegalActions \n";
 			std::vector<Action> res = {};
 			int player = GetPlayer();
 			if (GetChance() == 1)
@@ -1230,6 +1237,7 @@ namespace open_spiel
 
 		void RiskState::DoApplyAction(Action action_id)
 		{
+            std::cout<<"State:DoApplyAction \n";
 			int player = GetPlayer();
 			if (action_id == 0 && GetChance())
 			{
@@ -1404,6 +1412,7 @@ namespace open_spiel
 
 		bool RiskState::IsTerminal() const
 		{
+            std::cout<<"State:IsTerminal \n";
 			if (GetMaxElim() == num_players_ || GetTurns() >= max_turns_)
 			{
 				return true;
@@ -1413,7 +1422,7 @@ namespace open_spiel
 
 		bool RiskState::IsChanceNode() const
 		{
-			return (CurrentPlayer() == -1);
+			return (CurrentPlayer() == kChancePlayerId);
 		}
 
 		bool RiskState::IsPlayerNode() const
@@ -1441,13 +1450,15 @@ namespace open_spiel
 		void RiskState::ObservationTensor(Player player,
 										  absl::Span<float> values) const
 		{
+            std::cout<<"State:ObservationTensor \n";
 			ContiguousAllocator allocator(values);
 			const RiskGame &game = open_spiel::down_cast<const RiskGame &>(*game_);
 			game.default_observer_->WriteTensor(*this, player, &allocator);
 		}
 
 		std::unique_ptr<State> RiskState::Clone() const
-		{
+        {
+            std::cout<<"State:Clone \n";
 			return std::unique_ptr<RiskState>(new RiskState(*this));
 		}
 
@@ -1463,6 +1474,7 @@ namespace open_spiel
 			fort_abs_(ParameterValue<bool>("fort_abs")),
 			fort_q_(ParameterValue<int>("fort_q"))
 		{
+            std::cout <<"Game:Game \n";
 			int map_ = ParameterValue<int>("map");
 			std::array<int, 4> action_q_ = {dep_q_, atk_q_, redist_q_, fort_q_};
 			std::array<bool, 4> abstraction_ = {dep_abs_, atk_abs_, redist_abs_, fort_abs_};
@@ -1538,7 +1550,8 @@ namespace open_spiel
 			return terr_names_;
 		}
 		std::unique_ptr<State> RiskGame::NewInitialState() const {
-			const auto ptr =std::dynamic_pointer_cast<const RiskGame>(shared_from_this());
+            std::cout <<"Game:NewInitialState \n";
+            const auto ptr =std::dynamic_pointer_cast<const RiskGame>(shared_from_this());
 			return std::make_unique<RiskState>(ptr);
 		}
 
@@ -1552,7 +1565,8 @@ namespace open_spiel
 
 
 		std::shared_ptr<Observer> RiskGame::MakeObserver(absl::optional<IIGObservationType> iig_obs_type, const GameParameters& params) const {
-			if (!params.empty())
+            std::cout<<"Game:MakeObserver \n";
+            if (!params.empty())
 				SpielFatalError("Observation params not supported");
 			return std::make_shared<RiskObserver>(iig_obs_type.value_or(kDefaultObsType));
 		}

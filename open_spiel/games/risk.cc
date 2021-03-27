@@ -138,7 +138,7 @@ namespace open_spiel
 				{
 					if (!iig_obs_type_.perfect_recall)
 					{
-						auto out = allocator->Get("board", {num_players * num_terrs + 2 * num_players + 13 + 5 * num_terrs + num_players * (num_players - 1)});
+						auto out = allocator->Get("board", {num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs + num_players * (num_players - 1)});
 						for (int i = 0; i < num_players * num_terrs + num_players + 14 + 5 * num_terrs; ++i)
 						{
 							out.at(i) = state.board[i];

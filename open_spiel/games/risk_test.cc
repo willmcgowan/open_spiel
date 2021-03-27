@@ -31,8 +31,8 @@ void BasicRiskTests() {
 		for (int i = 2; i < 7; ++i) {
 		std::vector<int> rewards;
 		std::vector<int> assist;
-		std::vector<int> abstraction0 = { false,false,false,false };
-		std::vector<int> abstraction1 = { true,true,true,true };
+		std::vector<bool> abstraction0 = { false,false,false,false };
+		std::vector<bool> abstraction1 = { true,true,true,true };
 		std::vector<int> action_q0 = { 55,1000,1000,1000 };
 		std::vector<int> action_q1 = { 5,1,1,1 };
 		int max_turns=90-(i-2)*5;

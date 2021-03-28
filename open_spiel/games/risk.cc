@@ -1351,9 +1351,9 @@ namespace open_spiel
 		}
 
 		std::vector<double> RiskState::Rewards() const
-		{
-			assert(IsTerminal());
+		{	
 			std::vector<double> res = {};
+			if(IsTerminal()){
 			std::vector<int> arr(num_players_, 0);
 			int split = 0;
 			int split_rewards = 0;
@@ -1378,6 +1378,12 @@ namespace open_spiel
 					res.push_back(split_reward);
 				}
 			}
+			}
+			else{
+				for(int i =0;i < num_players_;++i){
+					res.push_back(0);
+				}
+			}
 			return res;
 		}
 
@@ -1400,6 +1406,7 @@ namespace open_spiel
 
 		Player RiskState::CurrentPlayer() const
 		{
+			std::cout<<"State:CurrentPlayer \n";
 			if (GetChance())
 			{
 				return kChancePlayerId;

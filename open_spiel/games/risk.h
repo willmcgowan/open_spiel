@@ -174,7 +174,7 @@ class RiskState : public State {
       return "0";
   }
   std::string ActionToString(Player player, Action action_id) const override {
-      return 0;
+      return "0";
   }
  
 
@@ -193,6 +193,7 @@ protected:
   std::array<bool, 4> abstraction_;
   std::array<int, 4> action_q_;//for no abstraction represents how many troops from 1 to that number that can be utilised, if abstraction then it represents number of bins
   std::array<int, 10> phse_constants_;
+  std::vector<std::string> terr_names_;
  private:
   friend class RiskObserver;
 };
@@ -210,17 +211,17 @@ class RiskGame :public Game{
   std::vector<int> ObservationTensorShape() const override;
   int MaxGameLength() const override { return max_game_length_; }
   int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_; }
-  int MaxTurns() const;
-  int NumTerrs() const;
-  std::vector<std::vector<int>> Adj() const;
-  std::vector<std::vector<int>> Cont() const;
-  std::vector<int> ContBonus() const;
-  std::vector<double> Rewards() const;
-  std::vector<int> Assist() const;
-  std::array<bool, 4> Abstraction() const;
-  std::array<int, 4> ActionQ() const;
-  std::array<int, 4> CardArr() const;
-  std::vector<std::string> TerrNames() const;
+  int MaxTurns() const{return max_turns_;}
+  int NumTerrs() const{return num_terrs_;}
+  std::vector<std::vector<int>> Adj() const{return adj_;}
+  std::vector<std::vector<int>> Cont() const{return cont_;}
+  std::vector<int> ContBonus() const{return cont_bonus_;}
+  std::vector<double> Rewards() const{return rewards_;}
+  std::vector<int> Assist() const{return assist_;}
+  std::array<bool, 4> Abstraction() const{return abstraction_;}
+  std::array<int, 4> ActionQ() const{return action_q_;}
+  std::array<int, 4> CardArr() const{return card_arr_;}
+  std::vector<std::string> TerrNames() const{return terr_names_;}
   std::shared_ptr<Observer> MakeObserver(
       absl::optional<IIGObservationType> iig_obs_type,
       const GameParameters& params) const override;

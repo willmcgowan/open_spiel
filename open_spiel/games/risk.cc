@@ -172,7 +172,8 @@ namespace open_spiel
 																	 num_terrs_(game->NumTerrs()), max_turns_(game->MaxTurns()),
 																	 cont_bonus_(game->ContBonus()), assist_(game->Assist()),
 																	 rewards_(game->Rewards()), card_arr_(game->CardArr()),
-																	 abstraction_(game->Abstraction()), action_q_(game->ActionQ())
+																	 abstraction_(game->Abstraction()), action_q_(game->ActionQ()),
+																	 terr_names_(game->TerrNames())
 		{
             std::cout <<"State:State \n";
 			num_players_ = game->NumPlayers();
@@ -262,7 +263,7 @@ namespace open_spiel
 
 		void RiskState::SetPhse(int phse)
 		{
-            std::cout<<"State:SetPhse \n";
+            std::cout<<"State:SetPhse " +std::to_string(phse)<<std::endl;
 			ResetPhse();
 			board[num_players_ * num_terrs_ + num_players_ + 1 + phse] = 1;
 		}
@@ -642,6 +643,7 @@ namespace open_spiel
 
 		void RiskState::EndTurn()
 		{
+			std::cout<<"State:EndTurn"<<std::endl;
 			if (GetSucc() == 1)
 			{
 				SetChance(1);
@@ -665,6 +667,7 @@ namespace open_spiel
 
 		void RiskState::Eliminate(int victim, int victor)
 		{
+			std::cout<<"State:Eliminate"<<std::endl;
 			auto victim_hand = GetHand(victim);
 			for (int i = 0; i < num_terrs_ + 2; ++i)
 			{
@@ -677,6 +680,7 @@ namespace open_spiel
 
 		void RiskState::Deal()
 		{
+			std::cout<<"State:Deal"<<std::endl;
 			int player = GetPlayer();
 			assert(GetChance() == 1);
 			std::vector<int> internal_deck = {};
@@ -702,6 +706,7 @@ namespace open_spiel
 
 		void RiskState::Cash()
 		{
+			std::cout<<"State:Cash"<<std::endl;
 			int player = GetPlayer();
 			assert(GetCashable(player));
 			int key = GetHandSig(player);
@@ -733,10 +738,12 @@ namespace open_spiel
 				SetCard(player, sat_cards[i], 0);
 			}
 			IncrementIncome(income);
+			std::cout<<"Cashes "+std::to_string(income)<<std::endl;
 		}
 
 		void RiskState::Income()
 		{
+			std::cout<<"State:Income"<<std::endl;
 			int turns = GetTurns();
 			int income = 0;
 			assert(GetIncome() == 0);
@@ -782,14 +789,18 @@ namespace open_spiel
 				income = base + continent_bonus + ast_bonus;
 			}
 			SetIncome(income);
+			std::cout<<"Income "+std::to_string(income)<<std::endl;
 		}
 
 		void RiskState::Deploy(int amount)
 		{
+			std::cout<<"State:Deploy"<<std::endl;
 			int coord = GetCoord(0);
 			int player = GetPlayer();
 			IncrementTerr(coord, player, amount);
 			IncrementIncome(-amount);
+			std::cout<<"Deploys to "+terr_names_[coord]+" amount "+std::to_string(amount)<<std::endl;
+			std::cout<<"Remaining income "+std::to_string(GetIncome())<<std::endl;
 			if (GetIncome() == 0)
 			{
 				if (GetTurns() < starting_troops_)
@@ -809,6 +820,7 @@ namespace open_spiel
 
 		void RiskState::Attack()
 		{
+			std::cout<<"State::Attack"<<std::endl;
 			double prob_arr[6][2] = {{0.2925668724279835, 0.628343621399177}, {0.3402777777777778, 1.0}, {0.44830246913580246, 0.7723765432098766}, {0.4212962962962963, 1.0}, {0.7453703703703703, 1.0}, {0.5833333333333334, 1.0}};
 			int n_atk = GetAtkNum();
 			int coord_from = GetCoord(2);
@@ -817,6 +829,7 @@ namespace open_spiel
 			int def_player = GetOwner(coord_to);
 			int n_def = board[num_terrs_ * def_player + coord_to];
 			int start_amount = n_atk;
+			std::cout<<"Attacks from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(n_atk)+" against "+std::to_string(n_def)<<std::endl;
 			while (n_atk > 0 && n_def > 0)
 			{
 				std::random_device seed;
@@ -937,11 +950,13 @@ namespace open_spiel
 
 		void RiskState::Redistribute(int amount)
 		{
+			std::cout<<"State:Redist"<<std::endl;
 			int coord_from = GetCoord(3);
 			int coord_to = GetCoord(2);
 			int player = GetPlayer();
 			IncrementTerr(coord_from, player, -amount);
 			IncrementTerr(coord_to, player, amount);
+			std::cout<<"Redistributes from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(amount)<<std::endl;
 			int sum = GetHandSum(player);
 			if (sum > 5)
 			{
@@ -960,12 +975,14 @@ namespace open_spiel
 
 		void RiskState::Fortify(int amount)
 		{
+			std::cout<<"State:Fortify"<<std::endl;
 			int player = GetPlayer();
 			int coord_from = GetCoord(6);
 			int coord_to = GetCoord(7);
 			IncrementTerr(coord_to, player, amount);
 			IncrementTerr(coord_from, player, -amount);
 			EndTurn();
+			std::cout<<"Fortifies from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(amount)<<std::endl;
 		}
 
 		//populate above with all necessary asserts/
@@ -1346,13 +1363,13 @@ namespace open_spiel
 					break;
 				}
 			}
-			history_.push_back(PlayerAction{CurrentPlayer(), action_id});
+			history_.push_back({CurrentPlayer(), action_id});
 			move_number_ += 1;
 		}
 
 		std::vector<double> RiskState::Rewards() const
 		{	
-			std::vector<double> res = {};
+			std::vector<double> res = std::vector<double>(num_players_,0);
 			if(IsTerminal()){
 			std::vector<int> arr(num_players_, 0);
 			int split = 0;
@@ -1371,18 +1388,13 @@ namespace open_spiel
 			{
 				if (arr[i] != 0)
 				{
-					res.push_back(rewards_[arr[i] - 1]);
+					res[i]=rewards_[arr[i] - 1];
 				}
 				else
 				{
-					res.push_back(split_reward);
+					res[i] = split_reward;
 				}
 			}
-			}
-			else{
-				for(int i =0;i < num_players_;++i){
-					res.push_back(0);
-				}
 			}
 			return res;
 		}
@@ -1410,6 +1422,10 @@ namespace open_spiel
 			if (GetChance())
 			{
 				return kChancePlayerId;
+			}
+			else if(IsTerminal())
+			{
+				return kTerminalPlayerId;
 			}
 			else
 			{
@@ -1520,41 +1536,6 @@ namespace open_spiel
 				IIGObservationType{.public_info = true,
 								   .perfect_recall = false,
 								   .private_info = PrivateInfoType::kNone});
-		}
-
-
-		int RiskGame::MaxTurns() const {
-			return max_turns_;
-		}
-		int RiskGame::NumTerrs() const {
-			return num_terrs_;
-		}
-		std::vector<std::vector<int>> RiskGame::Adj() const{
-			return adj_;
-		}
-		std::vector<std::vector<int>> RiskGame::Cont() const {
-			return cont_;
-		}
-		std::vector<int> RiskGame::ContBonus() const {
-			return cont_bonus_;
-		}
-		std::vector<double> RiskGame::Rewards() const {
-			return rewards_;
-		}
-		std::vector<int> RiskGame::Assist() const{
-			return assist_;
-		}
-		std::array<bool, 4> RiskGame::Abstraction() const{
-			return abstraction_;
-		}
-		std::array<int, 4> RiskGame::ActionQ() const{
-			return action_q_;
-		}
-		std::array<int, 4> RiskGame::CardArr() const {
-			return card_arr_;
-		}
-		std::vector<std::string> RiskGame::TerrNames() const {
-			return terr_names_;
 		}
 		std::unique_ptr<State> RiskGame::NewInitialState() const {
             std::cout <<"Game:NewInitialState \n";

@@ -116,7 +116,7 @@ namespace open_spiel
 			void WriteTensor(const State &observed_state, int player,
 							 Allocator *allocator) const override
 			{
-                std::cout<<"Observer:WriteTensor \n";
+                //std::cout<<"Observer:WriteTensor \n";
 				const RiskState &state =
 					open_spiel::down_cast<const RiskState &>(observed_state);
 				SPIEL_CHECK_GE(player, 0);
@@ -175,7 +175,7 @@ namespace open_spiel
 																	 abstraction_(game->Abstraction()), action_q_(game->ActionQ()),
 																	 terr_names_(game->TerrNames())
 		{
-            std::cout <<"State:State \n";
+            //std::cout <<"State:State \n";
 			num_players_ = game->NumPlayers();
 			num_distinct_actions_ = game->NumDistinctActions();
 			game_ = game;
@@ -215,7 +215,7 @@ namespace open_spiel
 
 		void RiskState::SetPlayer(int player)
 		{
-            std::cout<<"State:SetPlayer \n";
+            //std::cout<<"State:SetPlayer \n";
 			ResetPlayer();
 			board[num_players_ * num_terrs_ + player] = 1;
 		}
@@ -263,7 +263,7 @@ namespace open_spiel
 
 		void RiskState::SetPhse(int phse)
 		{
-            std::cout<<"State:SetPhse " +std::to_string(phse)<<std::endl;
+            //std::cout<<"State:SetPhse " +std::to_string(phse)<<std::endl;
 			ResetPhse();
 			board[num_players_ * num_terrs_ + num_players_ + 1 + phse] = 1;
 		}
@@ -282,7 +282,7 @@ namespace open_spiel
 
 		void RiskState::SetIncome(int income)
 		{
-            std::cout<<"State:SetIncome \n";
+            //std::cout<<"State:SetIncome \n";
 			board[num_players_ * num_terrs_ + num_players_ + 2 + 9] = income;
 		}
 
@@ -643,7 +643,7 @@ namespace open_spiel
 
 		void RiskState::EndTurn()
 		{
-			std::cout<<"State:EndTurn"<<std::endl;
+			//std::cout<<"State:EndTurn"<<std::endl;
 			if (GetSucc() == 1)
 			{
 				SetChance(1);
@@ -667,7 +667,7 @@ namespace open_spiel
 
 		void RiskState::Eliminate(int victim, int victor)
 		{
-			std::cout<<"State:Eliminate"<<std::endl;
+			//std::cout<<"State:Eliminate"<<std::endl;
 			auto victim_hand = GetHand(victim);
 			for (int i = 0; i < num_terrs_ + 2; ++i)
 			{
@@ -680,7 +680,7 @@ namespace open_spiel
 
 		void RiskState::Deal()
 		{
-			std::cout<<"State:Deal"<<std::endl;
+			//std::cout<<"State:Deal"<<std::endl;
 			int player = GetPlayer();
 			assert(GetChance() == 1);
 			std::vector<int> internal_deck = {};
@@ -706,7 +706,7 @@ namespace open_spiel
 
 		void RiskState::Cash()
 		{
-			std::cout<<"State:Cash"<<std::endl;
+			//std::cout<<"State:Cash"<<std::endl;
 			int player = GetPlayer();
 			assert(GetCashable(player));
 			int key = GetHandSig(player);
@@ -738,12 +738,12 @@ namespace open_spiel
 				SetCard(player, sat_cards[i], 0);
 			}
 			IncrementIncome(income);
-			std::cout<<"Cashes "+std::to_string(income)<<std::endl;
+			//std::cout<<"Cashes "+std::to_string(income)<<std::endl;
 		}
 
 		void RiskState::Income()
 		{
-			std::cout<<"State:Income"<<std::endl;
+			//std::cout<<"State:Income"<<std::endl;
 			int turns = GetTurns();
 			int income = 0;
 			assert(GetIncome() == 0);
@@ -789,18 +789,18 @@ namespace open_spiel
 				income = base + continent_bonus + ast_bonus;
 			}
 			SetIncome(income);
-			std::cout<<"Income "+std::to_string(income)<<std::endl;
+			//std::cout<<"Income "+std::to_string(income)<<std::endl;
 		}
 
 		void RiskState::Deploy(int amount)
 		{
-			std::cout<<"State:Deploy"<<std::endl;
+			//std::cout<<"State:Deploy"<<std::endl;
 			int coord = GetCoord(0);
 			int player = GetPlayer();
 			IncrementTerr(coord, player, amount);
 			IncrementIncome(-amount);
-			std::cout<<"Deploys to "+terr_names_[coord]+" amount "+std::to_string(amount)<<std::endl;
-			std::cout<<"Remaining income "+std::to_string(GetIncome())<<std::endl;
+			//std::cout<<"Deploys to "+terr_names_[coord]+" amount "+std::to_string(amount)<<std::endl;
+			//std::cout<<"Remaining income "+std::to_string(GetIncome())<<std::endl;
 			if (GetIncome() == 0)
 			{
 				if (GetTurns() < starting_troops_)
@@ -820,7 +820,7 @@ namespace open_spiel
 
 		void RiskState::Attack()
 		{
-			std::cout<<"State::Attack"<<std::endl;
+			//std::cout<<"State::Attack"<<std::endl;
 			double prob_arr[6][2] = {{0.2925668724279835, 0.628343621399177}, {0.3402777777777778, 1.0}, {0.44830246913580246, 0.7723765432098766}, {0.4212962962962963, 1.0}, {0.7453703703703703, 1.0}, {0.5833333333333334, 1.0}};
 			int n_atk = GetAtkNum();
 			int coord_from = GetCoord(2);
@@ -829,7 +829,7 @@ namespace open_spiel
 			int def_player = GetOwner(coord_to);
 			int n_def = board[num_terrs_ * def_player + coord_to];
 			int start_amount = n_atk;
-			std::cout<<"Attacks from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(n_atk)+" against "+std::to_string(n_def)<<std::endl;
+			//std::cout<<"Attacks from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(n_atk)+" against "+std::to_string(n_def)<<std::endl;
 			while (n_atk > 0 && n_def > 0)
 			{
 				std::random_device seed;
@@ -950,13 +950,13 @@ namespace open_spiel
 
 		void RiskState::Redistribute(int amount)
 		{
-			std::cout<<"State:Redist"<<std::endl;
+			//std::cout<<"State:Redist"<<std::endl;
 			int coord_from = GetCoord(3);
 			int coord_to = GetCoord(2);
 			int player = GetPlayer();
 			IncrementTerr(coord_from, player, -amount);
 			IncrementTerr(coord_to, player, amount);
-			std::cout<<"Redistributes from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(amount)<<std::endl;
+			//std::cout<<"Redistributes from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(amount)<<std::endl;
 			int sum = GetHandSum(player);
 			if (sum > 5)
 			{
@@ -975,14 +975,14 @@ namespace open_spiel
 
 		void RiskState::Fortify(int amount)
 		{
-			std::cout<<"State:Fortify"<<std::endl;
+			//std::cout<<"State:Fortify"<<std::endl;
 			int player = GetPlayer();
 			int coord_from = GetCoord(6);
 			int coord_to = GetCoord(7);
 			IncrementTerr(coord_to, player, amount);
 			IncrementTerr(coord_from, player, -amount);
 			EndTurn();
-			std::cout<<"Fortifies from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(amount)<<std::endl;
+			//std::cout<<"Fortifies from "+terr_names_[coord_from]+" to "+terr_names_[coord_to]+" amount "+std::to_string(amount)<<std::endl;
 		}
 
 		//populate above with all necessary asserts/
@@ -1005,6 +1005,7 @@ namespace open_spiel
 		//current abstraction operators//
 		std::vector<int> RiskState::GetAbstraction(int num, int abs) const
 		{
+			//std::cout<<"State:GetAbstraction"<<std::endl;
 			std::vector<int> res = {0};
 			for (int i = 0; i < abs; ++i)
 			{
@@ -1018,6 +1019,7 @@ namespace open_spiel
 
 		int RiskState::RetAbstraction(int action, int abs) const
 		{
+			//std::cout<<"State:RetAbstraction"<<std::endl;
 			int phse = GetPhse();
 			int num = 0;
 			switch (phse)
@@ -1043,7 +1045,7 @@ namespace open_spiel
 		//obviously the most costly func//
 		std::vector<Action> RiskState::LegalActions() const
 		{
-            std::cout << "State:LegalActions \n";
+            //std::cout << "State:LegalActions \n";
 			std::vector<Action> res = {};
 			int player = GetPlayer();
 			if (GetChance() == 1)
@@ -1220,6 +1222,7 @@ namespace open_spiel
 						if (dfs_arr[i] && i != from_coord)
 						{
 							res.push_back(phse_constants_[7] + i);
+						
 						}
 					}
 					break;
@@ -1249,12 +1252,23 @@ namespace open_spiel
 				}
 				}
 			}
+			std::cout<<"Phse: "+std::to_string(GetPhse())<<std::endl;
+			if(res.empty()){
+				std::cout<<"Empty legal action"<<std::endl;
+			}
+			for(int i =0 ;i<res.size();++i){
+				if(res[i]>phse_constants_[8]){
+					std::cout<<"Action id ERROR"<<std::endl;
+					std::cout<<"phse_constants_8:"+std::to_string(phse_constants_[8])<<std::endl;
+					std::cout<<"Action_id: "+std::to_string(res[i])<<std::endl;
+				}
+			}
 			return res;
 		}
 
 		void RiskState::DoApplyAction(Action action_id)
 		{
-            std::cout<<"State:DoApplyAction \n";
+            //std::cout<<"State:DoApplyAction \n";
 			int player = GetPlayer();
 			if (action_id == 0 && GetChance())
 			{
@@ -1418,7 +1432,7 @@ namespace open_spiel
 
 		Player RiskState::CurrentPlayer() const
 		{
-			std::cout<<"State:CurrentPlayer \n";
+			//std::cout<<"State:CurrentPlayer \n";
 			if (GetChance())
 			{
 				return kChancePlayerId;
@@ -1435,7 +1449,7 @@ namespace open_spiel
 
 		bool RiskState::IsTerminal() const
 		{
-            std::cout<<"State:IsTerminal \n";
+            //std::cout<<"State:IsTerminal \n";
 			if (GetMaxElim() == num_players_ || GetTurns() >= max_turns_)
 			{
 				return true;
@@ -1473,7 +1487,7 @@ namespace open_spiel
 		void RiskState::ObservationTensor(Player player,
 										  absl::Span<float> values) const
 		{
-            std::cout<<"State:ObservationTensor \n";
+            //std::cout<<"State:ObservationTensor \n";
 			ContiguousAllocator allocator(values);
 			const RiskGame &game = open_spiel::down_cast<const RiskGame &>(*game_);
 			game.default_observer_->WriteTensor(*this, player, &allocator);
@@ -1481,7 +1495,7 @@ namespace open_spiel
 
 		std::unique_ptr<State> RiskState::Clone() const
         {
-            std::cout<<"State:Clone \n";
+            //std::cout<<"State:Clone \n";
 			return std::unique_ptr<RiskState>(new RiskState(*this));
 		}
 
@@ -1538,7 +1552,7 @@ namespace open_spiel
 								   .private_info = PrivateInfoType::kNone});
 		}
 		std::unique_ptr<State> RiskGame::NewInitialState() const {
-            std::cout <<"Game:NewInitialState \n";
+            //std::cout <<"Game:NewInitialState \n";
             const auto ptr =std::dynamic_pointer_cast<const RiskGame>(shared_from_this());
 			return std::make_unique<RiskState>(ptr);
 		}
@@ -1553,7 +1567,7 @@ namespace open_spiel
 
 
 		std::shared_ptr<Observer> RiskGame::MakeObserver(absl::optional<IIGObservationType> iig_obs_type, const GameParameters& params) const {
-            std::cout<<"Game:MakeObserver \n";
+            //std::cout<<"Game:MakeObserver \n";
             if (!params.empty())
 				SpielFatalError("Observation params not supported");
 			return std::make_shared<RiskObserver>(iig_obs_type.value_or(kDefaultObsType));

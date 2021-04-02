@@ -1194,7 +1194,7 @@ namespace open_spiel
 
 				case 6:
 				{
-					std::cout<<"Phase 6 constant "+std::to_string(phse_constants_[6])<<std::endl;
+					//std::cout<<"Phase 6 constant "+std::to_string(phse_constants_[6])<<std::endl;
 					std::vector<int> troop_arr = GetTroopArr(player);
 					res.push_back(phse_constants_[6]);
 					for (int i = 0; i < num_terrs_; ++i)
@@ -1205,7 +1205,7 @@ namespace open_spiel
 							{
 								if (troop_arr[j] && adj_matrix_[i][j] && i != j)
 								{
-									std::cout << phse_constants_[6] + 1 + i<<std::endl;
+									//std::cout << phse_constants_[6] + 1 + i<<std::endl;
 									res.push_back(phse_constants_[6] + 1 + i);
 									break;
 								}
@@ -1253,10 +1253,10 @@ namespace open_spiel
 				}
 				}
 			}
-			std::cout<<"Phse: "+std::to_string(GetPhse())<<std::endl;
+			/*std::cout<<"Phse: "+std::to_string(GetPhse())<<std::endl;
 			if(res.empty()){
 				std::cout<<"Empty legal action"<<std::endl;
-			}
+			}*/
 
 			return res;
 		}
@@ -1372,8 +1372,8 @@ namespace open_spiel
 					break;
 				}
 			}
-			//history_.push_back({CurrentPlayer(), action_id});
-			//move_number_ += 1;
+			/*history_.push_back({CurrentPlayer(), action_id});
+			move_number_ += 1;*/
 		}
 
 		std::vector<double> RiskState::Rewards() const
@@ -1405,10 +1405,10 @@ namespace open_spiel
 				}
 			}
 			}
-			std::cout<<"Rewards"<<std::endl;
+			/*std::cout<<"Rewards"<<std::endl;
 			for(int i =0;i<res.size();++i){
 				std::cout<<"Player "+std::to_string(i)+" rewarded "+std::to_string(res[i])<<std::endl;
-			}
+			}*/
 			return res;
 		}
 

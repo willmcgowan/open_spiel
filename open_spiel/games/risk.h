@@ -234,7 +234,7 @@ class RiskGame :public Game{
  private:
      // Number of players.
         int num_players_;
-        int map_type_;
+        int map_;
         bool dep_abs_;
         bool atk_abs_;
         bool redist_abs_;

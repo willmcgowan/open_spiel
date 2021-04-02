@@ -1006,7 +1006,7 @@ namespace open_spiel
 		std::vector<int> RiskState::GetAbstraction(int num, int abs) const
 		{
 			//std::cout<<"State:GetAbstraction"<<std::endl;
-			std::vector<int> res = {0};
+			std::vector<int> res = {};
 			for (int i = 0; i < abs; ++i)
 			{
 				if ((int)std::floor(num * (i + 1) / (abs)) > 0)
@@ -1194,6 +1194,7 @@ namespace open_spiel
 
 				case 6:
 				{
+					std::cout<<"Phase 6 constant "+std::to_string(phse_constants_[6])<<std::endl;
 					std::vector<int> troop_arr = GetTroopArr(player);
 					res.push_back(phse_constants_[6]);
 					for (int i = 0; i < num_terrs_; ++i)
@@ -1204,6 +1205,7 @@ namespace open_spiel
 							{
 								if (troop_arr[j] && adj_matrix_[i][j] && i != j)
 								{
+									std::cout << phse_constants_[6] + 1 + i<<std::endl;
 									res.push_back(phse_constants_[6] + 1 + i);
 									break;
 								}
@@ -1231,7 +1233,6 @@ namespace open_spiel
 				case 8:
 				{
 					int from_coord = GetCoord(6);
-					int to_coord = GetCoord(7);
 					std::vector<int> troop_arr = GetTroopArr(player);
 					if (!abstraction_[3])
 					{
@@ -1256,13 +1257,7 @@ namespace open_spiel
 			if(res.empty()){
 				std::cout<<"Empty legal action"<<std::endl;
 			}
-			for(int i =0 ;i<res.size();++i){
-				if(res[i]>phse_constants_[8]){
-					std::cout<<"Action id ERROR"<<std::endl;
-					std::cout<<"phse_constants_8:"+std::to_string(phse_constants_[8])<<std::endl;
-					std::cout<<"Action_id: "+std::to_string(res[i])<<std::endl;
-				}
-			}
+
 			return res;
 		}
 
@@ -1377,8 +1372,8 @@ namespace open_spiel
 					break;
 				}
 			}
-			history_.push_back({CurrentPlayer(), action_id});
-			move_number_ += 1;
+			//history_.push_back({CurrentPlayer(), action_id});
+			//move_number_ += 1;
 		}
 
 		std::vector<double> RiskState::Rewards() const
@@ -1409,6 +1404,10 @@ namespace open_spiel
 					res[i] = split_reward;
 				}
 			}
+			}
+			std::cout<<"Rewards"<<std::endl;
+			for(int i =0;i<res.size();++i){
+				std::cout<<"Player "+std::to_string(i)+" rewarded "+std::to_string(res[i])<<std::endl;
 			}
 			return res;
 		}
@@ -1512,9 +1511,9 @@ namespace open_spiel
 			fort_q_(ParameterValue<int>("fort_q"))
 		{
             std::cout <<"Game:Game \n";
-			int map_ = ParameterValue<int>("map");
-			std::array<int, 4> action_q_ = {dep_q_, atk_q_, redist_q_, fort_q_};
-			std::array<bool, 4> abstraction_ = {dep_abs_, atk_abs_, redist_abs_, fort_abs_};
+			map_ = ParameterValue<int>("map");
+			action_q_ = {dep_q_, atk_q_, redist_q_, fort_q_};
+			abstraction_ = {dep_abs_, atk_abs_, redist_abs_, fort_abs_};
 			num_distinct_actions_ = 4 + action_q_[0] + action_q_[1] + action_q_[2] + action_q_[3];
 			std::vector<std::vector<double>> reward_arr{{-1, 1}, {-1, -1, 2}, {-1, -1, -1, 3}, {-1, -1, -1, -1, 4}, {-1, -1, -1, -1, -1, 5}};
 			std::vector<std::vector<int>> assist_arr{{0, 3}, {0, 0, 3}, {0, 0, 1, 3}, {0, 0, 0, 1, 3}, {0, 0, 0, 1, 2, 3}};
@@ -1538,7 +1537,7 @@ namespace open_spiel
 			}
 			rewards_ = reward_arr[num_players_ - 2];
 			assist_ = assist_arr[num_players_ - 2];
-			num_distinct_actions_ += 5 * adj_.size();
+			num_distinct_actions_ += (int)5 * adj_.size();
 			max_chance_nodes_in_history_ = 10000; //random big number bc idk
 			max_game_length_ = 100000;
 			default_observer_ = std::make_shared<RiskObserver>(kDefaultObsType);

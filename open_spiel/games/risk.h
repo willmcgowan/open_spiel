@@ -257,6 +257,7 @@ class RiskGame :public Game{
         std::array<int, 4> action_q_;
         std::array<int, 4> card_arr_;
         std::vector<std::string> terr_names_;
+        mutable std::mt19937 rng_;
 };
 }  // namespace risk
 }  // namespace open_spiel

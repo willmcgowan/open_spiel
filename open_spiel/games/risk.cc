@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <iostream>
+#include <unordered_map>
 
 #include "open_spiel/abseil-cpp/absl/strings/str_cat.h"
 #include "open_spiel/fog/fog_constants.h"
@@ -50,6 +51,7 @@ namespace open_spiel
 			constexpr int kDefaultAtkQ = 1000;
 			constexpr int kDefaultRedistQ = 1000;
 			constexpr int kDefaultFortQ = 1000;
+			constexpr int kDefaultSeed = -1;
 
 			// Facts about the game
 			const GameType kGameType{
@@ -67,7 +69,7 @@ namespace open_spiel
 				/*provides_observation_string=*/false,
 				/*provides_observation_tensor=*/true,
 				/*parameter_specification=*/
-				{{"players", GameParameter(kDefaultPlayers)}, {"map", GameParameter(kDefaultMap)}, {"max_turns", GameParameter(kDefaultMaxTurns)}, {"dep_abs", GameParameter(kDefaultDepAbs)}, {"atk_abs", GameParameter(kDefaultAtkAbs)}, {"redist_abs", GameParameter(kDefaultRedistAbs)}, {"fort_abs", GameParameter(kDefaultFortAbs)}, {"dep_q", GameParameter(kDefaultDepQ)}, {"atk_q", GameParameter(kDefaultAtkQ)}, {"redist_q", GameParameter(kDefaultRedistQ)}, {"fort_q", GameParameter(kDefaultFortQ)}},
+				{{"players", GameParameter(kDefaultPlayers)},{"rng_seed",GameParameter(kDefaultSeed)}, {"map", GameParameter(kDefaultMap)}, {"max_turns", GameParameter(kDefaultMaxTurns)}, {"dep_abs", GameParameter(kDefaultDepAbs)}, {"atk_abs", GameParameter(kDefaultAtkAbs)}, {"redist_abs", GameParameter(kDefaultRedistAbs)}, {"fort_abs", GameParameter(kDefaultFortAbs)}, {"dep_q", GameParameter(kDefaultDepQ)}, {"atk_q", GameParameter(kDefaultAtkQ)}, {"redist_q", GameParameter(kDefaultRedistQ)}, {"fort_q", GameParameter(kDefaultFortQ)}},
 				/*default_loadable=*/true,
 				/*provides_factored_observation_string=*/false,
 			};
@@ -136,26 +138,24 @@ namespace open_spiel
 				}
 
 				// Betting sequence.
-				if (iig_obs_type_.public_info)
+				if (iig_obs_type_.public_info && !iig_obs_type_.perfect_recall)
 				{
-					if (!iig_obs_type_.perfect_recall)
+					auto out = allocator->Get("board", {num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs + num_players * (num_players - 1)});
+					for (int i = 0; i < num_players * num_terrs + num_players + 14 + 5 * num_terrs; ++i)
 					{
-						auto out = allocator->Get("board", {num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs + num_players * (num_players - 1)});
-						for (int i = 0; i < num_players * num_terrs + num_players + 14 + 5 * num_terrs; ++i)
-						{
-							out.at(i) = state.board[i];
-						}
-						for (int i = 0; i < num_players; ++i)
-						{
-							out.at(i + num_players * num_terrs + num_players + 14 + 5 * num_terrs) = state.GetHandSum(i);
-						}
-						for (int i = 0; i < num_players * (num_players - 1); ++i)
-						{
-							out.at(i + num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs) = state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players];
-						}
+						out.at(i) = state.board[i];
+					}
+					for (int i = 0; i < num_players; ++i)
+					{
+						out.at(i + num_players * num_terrs + num_players + 14 + 5 * num_terrs) = state.GetHandSum(i);
+					}
+					for (int i = 0; i < num_players * (num_players - 1); ++i)
+					{
+						out.at(i + num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs) = state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players];
 					}
 				}
 			}
+
 			std::string StringFrom(const State& observed_state,int player) const override {
 				const RiskState& state =open_spiel::down_cast<const RiskState&>(observed_state);
 				SPIEL_CHECK_GE(player, 0);
@@ -182,24 +182,7 @@ namespace open_spiel
 			board = std::vector<int>(2 * num_players_ * num_terrs_ + 14 + 2 * num_players_ + num_players_ * num_players_ + 5 * num_terrs_, 0);
 			adj_matrix_ = AdjMatrixer(game->Adj());
 			cont_matrix_ = ContMatrixer(game->Cont(), num_terrs_);
-			switch (num_players_)
-			{
-			case 2:
-				starting_troops_ = 40;
-				break;
-			case 3:
-				starting_troops_ = 35;
-				break;
-			case 4:
-				starting_troops_ = 30;
-				break;
-			case 5:
-				starting_troops_ = 25;
-				break;
-			case 6:
-				starting_troops_ = 20;
-				break;
-			}
+			starting_troops = 40 - 5 * (num_players_ - 2);
 			phse_constants_ = {0, num_terrs_ + 1, num_terrs_ + 1 + action_q_[0], 2 * num_terrs_ + 2 + action_q_[0], 3 * num_terrs_ + 2 + action_q_[0], 3 * num_terrs_ + 2 + action_q_[0] + action_q_[1], 3 * num_terrs_ + 3 + action_q_[0] + action_q_[1] + action_q_[2], 4 * num_terrs_ + 4 + action_q_[0] + action_q_[1] + action_q_[2], 5 * num_terrs_ + 4 + action_q_[0] + action_q_[1] + action_q_[2]};
 			SetIncome(1);
 			SetPlayer(0);
@@ -822,6 +805,7 @@ namespace open_spiel
 		{
 			//std::cout<<"State::Attack"<<std::endl;
 			double prob_arr[6][2] = {{0.2925668724279835, 0.628343621399177}, {0.3402777777777778, 1.0}, {0.44830246913580246, 0.7723765432098766}, {0.4212962962962963, 1.0}, {0.7453703703703703, 1.0}, {0.5833333333333334, 1.0}};
+			std::unordered_map<int, int> dict = { {10,0},{4,1},{8,2},{3,3},{2,5},{6,4}};
 			int n_atk = GetAtkNum();
 			int coord_from = GetCoord(2);
 			int coord_to = GetCoord(3);
@@ -839,84 +823,19 @@ namespace open_spiel
 				int atk_dice = std::min(3, n_atk);
 				int def_dice = std::min(2, n_def);
 				int def_losses = 0;
-				switch (atk_dice * def_dice + def_dice)
-				{
-				case 8:
-					if (randnum <= prob_arr[0][0])
-					{
-						def_losses = 0;
-					}
-					else if (randnum <= prob_arr[0][1])
-					{
-						def_losses = 1;
-					}
-					else
-					{
-						def_losses = 2;
-					}
-					break;
-				case 6:
-					if (randnum <= prob_arr[2][0])
-					{
-						def_losses = 0;
-					}
-					else if (randnum <= prob_arr[2][1])
-					{
-						def_losses = 1;
-					}
-					else
-					{
-						def_losses = 2;
-					}
-					break;
-				case 4:
-					if (randnum <= prob_arr[1][0])
-					{
-						def_losses = 0;
-					}
-					else if (randnum <= prob_arr[1][1])
-					{
-						def_losses = 1;
-					}
-					else
-					{
-						def_losses = 2;
-					}
-					break;
-
-				case 3:
-					if (randnum <= prob_arr[3][0])
-					{
-						def_losses = 0;
-					}
-					else if (randnum <= prob_arr[3][1])
-					{
-						def_losses = 1;
-					}
-					else
-					{
-						int def_losses = 2;
-					}
-					break;
-				case 2:
-					if (randnum <= prob_arr[4][0])
-					{
-						int def_losses = 0;
-					}
-					else if (randnum <= prob_arr[4][1])
-					{
-						def_losses = 1;
-					}
-					else
-					{
-						def_losses = 2;
-					}
-					break;
+				int hash = def_dice*(atk_dice+def_dice);
+				if (randnum <= prob_arr[dict[hash]][0]) {
+					def_losses = 0;
+				}
+				else if (randnum <= prob_arr[dict[hash]][1]) {
+					def_losses = 1;
+				}
+				else {
+					def_losses = 2;
 				}
 				n_def -= def_losses;
 				n_atk -= std::min(atk_dice, def_dice) - def_losses;
 			}
-
 			SetChance(0);
 			assert(n_def == 0 || n_atk == 0);
 			if (n_def == 0)
@@ -1508,7 +1427,10 @@ namespace open_spiel
 			redist_abs_(ParameterValue<bool>("redist_abs")),
 			redist_q_(ParameterValue<int>("redist_q")),
 			fort_abs_(ParameterValue<bool>("fort_abs")),
-			fort_q_(ParameterValue<int>("fort_q"))
+			fort_q_(ParameterValue<int>("fort_q")),
+			rng_(std::mt19937(ParameterValue<int>("rng_seed") == -1
+				? std::time(0)
+				: ParameterValue<int>("rng_seed")))
 		{
             std::cout <<"Game:Game \n";
 			map_ = ParameterValue<int>("map");

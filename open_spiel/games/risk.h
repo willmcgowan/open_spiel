@@ -88,8 +88,9 @@ namespace risk {
     const std::vector<int> ClassicContBonus = { 2, 7, 5, 2, 3, 5 };
     const std::array<int, 4> ClassicCardArr = { 14,28,42,44 };
     const std::vector<std::string> ClassicTerrNames = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
-
-
+    const std::vector<std::vector<int>> RewardsArr = { {-1, 1}, {-1, -1, 2}, {-1, -1, -1, 3}, {-1, -1, -1, -1, 4}, {-1, -1, -1, -1, -1, 5} };
+    const std::vector<std::vector<int>> AssistsArr = { {0, 3}, {0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 1, 2}, {0, 0, 0, 1, 2, 3} };
+    inline constexpr int kDefaultSeed = -1;
 
 class RiskGame;
 class RiskObserver;
@@ -181,83 +182,59 @@ class RiskState : public State {
 protected:
   void DoApplyAction(Action move) override;
   int num_terrs_;
-  int starting_troops_;
-  int max_turns_;
-  std::vector<double> rewards_;
-  std::vector<int> assist_;
   std::vector<int> board;
-  std::vector<std::vector<bool>> adj_matrix_;
-  std::vector<std::vector<bool>> cont_matrix_;
-  std::vector<int> cont_bonus_;
-  std::array<int, 4> card_arr_;
-  std::array<bool, 4> abstraction_;
-  std::array<int, 4> action_q_;//for no abstraction represents how many troops from 1 to that number that can be utilised, if abstraction then it represents number of bins
+  //for no abstraction represents how many troops from 1 to that number that can be utilised, if abstraction then it represents number of bins
   std::array<int, 9> phse_constants_;
-  std::vector<std::string> terr_names_;
  private:
   friend class RiskObserver;
+  int random_seed = kDefaultSeed;
 };
 
-class RiskGame :public Game{
- public:
-  explicit RiskGame(const GameParameters & params);
-  int NumDistinctActions() const override { return num_distinct_actions_; }
-  std::unique_ptr<State> NewInitialState() const override;
-  int MaxChanceOutcomes() const override { return 1; }
-  int NumPlayers() const override { return num_players_; }
-  double MinUtility() const override { return rewards_[0]; };
-  double MaxUtility() const override { return rewards_[num_players_ - 1]; };
-  double UtilitySum() const override { return 0; }
-  std::vector<int> ObservationTensorShape() const override;
-  int MaxGameLength() const override { return max_game_length_; }
-  int MaxChanceNodesInHistory() const override { return max_chance_nodes_in_history_; }
-  int MaxTurns() const{return max_turns_;}
-  int NumTerrs() const{return num_terrs_;}
-  std::vector<std::vector<int>> Adj() const{return adj_;}
-  std::vector<std::vector<int>> Cont() const{return cont_;}
-  std::vector<int> ContBonus() const{return cont_bonus_;}
-  std::vector<double> Rewards() const{return rewards_;}
-  std::vector<int> Assist() const{return assist_;}
-  std::array<bool, 4> Abstraction() const{return abstraction_;}
-  std::array<int, 4> ActionQ() const{return action_q_;}
-  std::array<int, 4> CardArr() const{return card_arr_;}
-  std::vector<std::string> TerrNames() const{return terr_names_;}
-  std::shared_ptr<Observer> MakeObserver(
-      absl::optional<IIGObservationType> iig_obs_type,
-      const GameParameters& params) const override;
+class RiskGame :public Game {
+public:
+      explicit RiskGame(const GameParameters& params);
+      int NumDistinctActions() const override;
+      std::unique_ptr<State> NewInitialState() const override;
+      int MaxChanceOutcomes() const override { return 1; }
+      int NumPlayers() const override { return num_players_; }
+      double MinUtility() const override { return rewards_[0]; };
+      double MaxUtility() const override { return rewards_[num_players_ - 1]; };
+      double UtilitySum() const override { return 0; }
+      std::vector<int> ObservationTensorShape() const override;
+      int MaxGameLength() const override { return 100000; }//stupid big numbers to get to work
+      int MaxChanceNodesInHistory() const override { return 10000; }//ditto
+      std::shared_ptr<Observer> MakeObserver(
+          absl::optional<IIGObservationType> iig_obs_type,
+          const GameParameters& params) const override;
 
-  // Used to implement the old observation API.
-  std::shared_ptr<RiskObserver> default_observer_;
-  std::shared_ptr<RiskObserver> public_observer_;
-  std::shared_ptr<RiskObserver> private_observer_;
+      // Used to implement the old observation API.
+      std::shared_ptr<RiskObserver> default_observer_;
+      std::shared_ptr<RiskObserver> public_observer_;
+      std::shared_ptr<RiskObserver> private_observer_;
+
+      std::unique_ptr<State> DeserializeState(
+          const std::string& str) const override;
+      std::string GetRNGState() const override;
+      void SetRNGState(const std::string& rng_state) const override;
 
  private:
      // Number of players.
-        int num_players_;
-        int map_;
-        bool dep_abs_;
-        bool atk_abs_;
-        bool redist_abs_;
-        bool fort_abs_;
-        int dep_q_;
-        int atk_q_;
-        int redist_q_;
-        int fort_q_;
-        std::vector<std::vector<int>> adj_;
-        std::vector<std::vector<int>> cont_;
-        std::vector<int> cont_bonus_;
-        int max_turns_;
-        int num_terrs_;
-        int num_distinct_actions_;
-        int max_chance_nodes_in_history_;
-        int max_game_length_;
+        friend class RiskState;
+        const int num_players_;
+        const int map_;
+        const std::vector<std::vector<bool>> adj_matrix_;
+        const std::vector<std::vector<bool>> cont_matrix_;
+        const std::vector<int> cont_bonus_;
+        const int max_turns_;
+        const int starting_troops_;
         std::vector<double> rewards_;
         std::vector<int> assist_;
-        std::array<bool, 4> abstraction_;
-        std::array<int, 4> action_q_;
-        std::array<int, 4> card_arr_;
-        std::vector<std::string> terr_names_;
+        const std::array<bool, 4> abstraction_;
+        const std::array<int, 4> action_q_;
+        const std::array<int, 4> card_arr_;
+        const std::vector<std::string> terr_names_;
         mutable std::mt19937 rng_;
+        int RNG() const;
 };
 }  // namespace risk
 }  // namespace open_spiel

@@ -88,7 +88,7 @@ namespace risk {
     const std::vector<int> ClassicContBonus = { 2, 7, 5, 2, 3, 5 };
     const std::array<int, 4> ClassicCardArr = { 14,28,42,44 };
     const std::vector<std::string> ClassicTerrNames = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
-    const std::vector<std::vector<int>> RewardsArr = { {-1, 1}, {-1, -1, 2}, {-1, -1, -1, 3}, {-1, -1, -1, -1, 4}, {-1, -1, -1, -1, -1, 5} };
+    const std::vector<std::vector<double>> RewardsArr = { {-1, 1}, {-1, -1, 2}, {-1, -1, -1, 3}, {-1, -1, -1, -1, 4}, {-1, -1, -1, -1, -1, 5} };
     const std::vector<std::vector<int>> AssistsArr = { {0, 3}, {0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 1, 2}, {0, 0, 0, 1, 2, 3} };
     inline constexpr int kDefaultSeed = -1;
 
@@ -188,6 +188,7 @@ protected:
  private:
   friend class RiskObserver;
   int random_seed = kDefaultSeed;
+  std::shared_ptr<const RiskGame> risk_parent_game_;
 };
 
 class RiskGame :public Game {
@@ -212,8 +213,6 @@ public:
       std::shared_ptr<RiskObserver> public_observer_;
       std::shared_ptr<RiskObserver> private_observer_;
 
-      std::unique_ptr<State> DeserializeState(
-          const std::string& str) const override;
       std::string GetRNGState() const override;
       void SetRNGState(const std::string& rng_state) const override;
 

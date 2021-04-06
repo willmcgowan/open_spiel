@@ -88,8 +88,8 @@ namespace risk {
     const std::vector<int> ClassicContBonus = { 2, 7, 5, 2, 3, 5 };
     const std::array<int, 4> ClassicCardArr = { 14,28,42,44 };
     const std::vector<std::string> ClassicTerrNames = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
-    const std::vector<std::vector<double>> RewardsArr = { {-1, 1}, {-1, -1, 2}, {-1, -1, -1, 3}, {-1, -1, -1, -1, 4}, {-1, -1, -1, -1, -1, 5} };
-    const std::vector<std::vector<int>> AssistsArr = { {0, 3}, {0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 1, 2}, {0, 0, 0, 1, 2, 3} };
+    const std::vector<std::vector<double>> RewardsArr{ {-1, 1}, {-1, -1, 2}, {-1, -1, -1, 3}, {-1, -1, -1, -1, 4}, {-1, -1, -1, -1, -1, 5} };
+    const std::vector<std::vector<int>> AssistsArr{ {0, 3}, {0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 1, 2}, {0, 0, 0, 1, 2, 3} };
     inline constexpr int kDefaultSeed = -1;
 
 class RiskGame;

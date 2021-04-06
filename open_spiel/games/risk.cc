@@ -1208,8 +1208,9 @@ namespace open_spiel
 				}
 				}
 			}
-			/*std::cout<<"Phse: "+std::to_string(GetPhse())<<std::endl;
-			if(res.empty()){
+			std::cout<<"Phse: "+std::to_string(GetPhse())<<std::endl;
+			
+			/*if(res.empty()){
 				std::cout<<"Empty legal action"<<std::endl;
 			}*/
 

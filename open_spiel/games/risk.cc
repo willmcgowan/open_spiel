@@ -85,11 +85,12 @@ namespace open_spiel
 		//helper funcs for constructing game object//
 		std::vector<std::vector<bool>> AdjMatrixer(int map)
 		{
+			std::vector<std::vector<int>> dict;
 			if (map == 0) {
-				std::vector<std::vector<int>>dict = SimpleAdjVect;
+				dict = SimpleAdjVect;
 			}
 			else {
-				std::vector<std::vector<int>>dict = ClassicAdjVect;
+				dict = ClassicAdjVect;
 			}
 			std::vector<std::vector<bool>> res(dict.size(), std::vector<bool>(dict.size(), 0));
 			for (int i = 0; i < dict.size(); ++i)
@@ -104,12 +105,14 @@ namespace open_spiel
 		}
 		std::vector<std::vector<bool>> ContMatrixer(int map)
 		{
+			std::vector<std::vector<int>> dict;
+			int terrs ;
 			if (map == 0) {
-				std::vector<std::vector<int>> dict = SimpleContVect;
+				dict = SimpleContVect;
 				terrs = 19;
 			}
 			else {
-				std::vector<std::vector<bool>> dict = ClassicContVect;
+				dict = ClassicContVect;
 				terrs = 42;
 			}
 			std::vector<std::vector<bool>> res(dict.size(), std::vector<bool>(terrs, 0));
@@ -130,11 +133,19 @@ namespace open_spiel
 				return ClassicContBonus;
 			}
 		}
-		std::vector<int> Rewarder(int num_players) {
+		std::vector<double> Rewarder(int num_players) {
 			return RewardsArr[num_players - 2];
 		}
 		std::vector<int> Assister(int num_players) {
 			return AssistsArr[num_players - 2];
+		}
+		std::array<int,4> CardArrer(int map){
+			if(map==0){
+				return SimpleCardArr;
+			}
+			else{
+				return ClassicCardArr;
+			}
 		}
 
 		std::vector<std::string> TerrNamer(int map) {
@@ -145,6 +156,7 @@ namespace open_spiel
 				return ClassicTerrNames;
 			}
 		}
+
 		class RiskObserver : public Observer
 		{
 		public:
@@ -204,10 +216,10 @@ namespace open_spiel
 		private:
 			IIGObservationType iig_obs_type_;
 		};
-		RiskState::RiskState(std::shared_ptr<const RiskGame> game) : State(game),num_terrs_((int)game->adj_matrix_.size())
+		RiskState::RiskState(std::shared_ptr<const RiskGame> game) : State(game),risk_parent_game_(std::static_pointer_cast<const RiskGame>(game)),num_terrs_((int)game->adj_matrix_.size())
 		{
 			board = std::vector<int>(2 * num_players_ * num_terrs_ + 14 + 2 * num_players_ + num_players_ * num_players_ + 5 * num_terrs_, 0);
-			phse_constants_ = {0, num_terrs_ + 1, num_terrs_ + 1 +game_->action_q_[0], 2 * num_terrs_ + 2 + game_->action_q_[0], 3 * num_terrs_ + 2 + game_->action_q_[0], 3 * num_terrs_ + 2 + game_->action_q_[0] + game_->action_q_[1], 3 * num_terrs_ + 3 + game_->action_q_[0] + game_->action_q_[1] + game_->action_q_[2], 4 * num_terrs_ + 4 + game_->action_q_[0] + game_->action_q_[1] + game_->action_q_[2], 5 * num_terrs_ + 4 + game_->action_q_[0] +game_->action_q_[1] + game_->action_q_[2]};
+			phse_constants_ = {0, num_terrs_ + 1, num_terrs_ + 1 +risk_parent_game_->action_q_[0], 2 * num_terrs_ + 2 + risk_parent_game_->action_q_[0], 3 * num_terrs_ + 2 + risk_parent_game_->action_q_[0], 3 * num_terrs_ + 2 + risk_parent_game_->action_q_[0] + risk_parent_game_->action_q_[1], 3 * num_terrs_ + 3 + risk_parent_game_->action_q_[0] + risk_parent_game_->action_q_[1] + risk_parent_game_->action_q_[2], 4 * num_terrs_ + 4 + risk_parent_game_->action_q_[0] + risk_parent_game_->action_q_[1] + risk_parent_game_->action_q_[2], 5 * num_terrs_ + 4 + risk_parent_game_->action_q_[0] +risk_parent_game_->action_q_[1] + risk_parent_game_->action_q_[2]};
 			SetIncome(1);
 			SetPlayer(0);
 			SetPhse(0);
@@ -500,7 +512,7 @@ namespace open_spiel
 			int arr[4] = {2, 3, 5, 7};
 			for (int i = 0; i < 4; ++i)
 			{
-				if (game_->card_arr_[i] > card_coord)
+				if (risk_parent_game_->card_arr_[i] > card_coord)
 				{
 					return arr[i];
 				}
@@ -558,7 +570,7 @@ namespace open_spiel
 			{
 				if (component_arr[i] == 0)
 				{
-					for (int j = 0; j <game_->card_arr_[0]; ++j)
+					for (int j = 0; j <risk_parent_game_->card_arr_[0]; ++j)
 					{
 						if (GetCard(player, j))
 						{
@@ -570,7 +582,7 @@ namespace open_spiel
 				}
 				else
 				{
-					for (int j = game_->card_arr_[component_arr[i] - 1]; j < game_->card_arr_[component_arr[i]]; ++j)
+					for (int j = risk_parent_game_->card_arr_[component_arr[i] - 1]; j < risk_parent_game_->card_arr_[component_arr[i]]; ++j)
 					{
 						if (GetCard(player, j))
 						{
@@ -701,7 +713,7 @@ namespace open_spiel
 			}
 			auto sig = GetHandSig(player);
 			//this may be belt and braces bruh//
-			random_seed = game_->RNG();
+			random_seed = risk_parent_game_->RNG();
 			std::mt19937 gen(random_seed);
 			std::uniform_int_distribution<> distrib(0, internal_deck.size() - 1);
 			int choice = distrib(gen);
@@ -755,7 +767,7 @@ namespace open_spiel
 			int turns = GetTurns();
 			int income = 0;
 			assert(GetIncome() == 0);
-			if (turns < game_->starting_troops_)
+			if (turns < risk_parent_game_->starting_troops_)
 			{
 				income = 1;
 			}
@@ -773,13 +785,13 @@ namespace open_spiel
 				int base = std::max((int)std::floor(terrs / 3), 3);
 				int continent_bonus = 0;
 				int ast_bonus = 0;
-				int num_continents = game_->cont_matrix_.size();
+				int num_continents = risk_parent_game_->cont_matrix_.size();
 				for (int i = 0; i < num_continents; ++i)
 				{
 					bool sat = true;
 					for (int j = 0; j < num_terrs_; ++j)
 					{
-						if (!(!troop_mask[j] && game_->cont_matrix_[i][j]))
+						if (!(!troop_mask[j] && risk_parent_game_->cont_matrix_[i][j]))
 						{
 							sat = false;
 							break;
@@ -787,12 +799,12 @@ namespace open_spiel
 					}
 					if (sat)
 					{
-						continent_bonus += game_->cont_bonus_[i];
+						continent_bonus += risk_parent_game_->cont_bonus_[i];
 					}
 				}
-				if (turns == game_->starting_troops_)
+				if (turns == risk_parent_game_->starting_troops_)
 				{
-					ast_bonus = game_->assist_[GetPlayer()];
+					ast_bonus = risk_parent_game_->assist_[GetPlayer()];
 				}
 				income = base + continent_bonus + ast_bonus;
 			}
@@ -811,7 +823,7 @@ namespace open_spiel
 			//std::cout<<"Remaining income "+std::to_string(GetIncome())<<std::endl;
 			if (GetIncome() == 0)
 			{
-				if (GetTurns() < game_->starting_troops_)
+				if (GetTurns() < risk_parent_game_->starting_troops_)
 				{
 					EndTurn();
 				}
@@ -842,7 +854,7 @@ namespace open_spiel
 			while (n_atk > 0 && n_def > 0)
 			{
 				//this may also be belt and braces//
-				random_seed = game_->RNG();
+				random_seed = risk_parent_game_->RNG();
 				std::mt19937 gen(random_seed);
 				std::uniform_real_distribution<> distrib(0, 1);
 				double randnum = distrib(gen);
@@ -940,7 +952,7 @@ namespace open_spiel
 			(*out)[vertex] = 1;
 			for (int i = 0; i < num_terrs_; ++i)
 			{
-				if (game_->adj_matrix_[vertex][i] && board[player * num_terrs_ + i] != 0 && !(*out)[i])
+				if (risk_parent_game_->adj_matrix_[vertex][i] && board[player * num_terrs_ + i] != 0 && !(*out)[i])
 				{
 					DepthFirstSearch(player, i, out);
 				}
@@ -1027,7 +1039,7 @@ namespace open_spiel
 				}
 				case 1:
 				{
-					if (!game_->abstraction_[0])
+					if (!risk_parent_game_->abstraction_[0])
 					{
 						for (int i = 0; i < GetIncome(); ++i)
 						{
@@ -1036,7 +1048,7 @@ namespace open_spiel
 					}
 					else
 					{
-						std::vector<int> abs = GetAbstraction(GetIncome(), game_->action_q_[0]);
+						std::vector<int> abs = GetAbstraction(GetIncome(), risk_parent_game_->action_q_[0]);
 						for (size_t i = 0; i < abs.size(); ++i)
 						{
 							res.push_back(abs[i] + phse_constants_[1]);
@@ -1066,7 +1078,7 @@ namespace open_spiel
 					{
 						for (int j = 0; j < num_terrs_; ++j)
 						{
-							if (game_->adj_matrix_[i][j]&& attackable_mask[i] && anti_mask[j])
+							if (risk_parent_game_->adj_matrix_[i][j]&& attackable_mask[i] && anti_mask[j])
 							{
 								res.push_back(phse_constants_[2] + 1 + i);
 								break;
@@ -1081,7 +1093,7 @@ namespace open_spiel
 					std::vector<int> troop_arr = GetTroopArr(player);
 					for (int i = 0; i < num_terrs_; ++i)
 					{
-						if (game_->adj_matrix_[i][from_coord] && troop_arr[i] == 0)
+						if (risk_parent_game_->adj_matrix_[i][from_coord] && troop_arr[i] == 0)
 						{
 							res.push_back(i + phse_constants_[3]);
 						}
@@ -1093,7 +1105,7 @@ namespace open_spiel
 				{
 					int coord_from = GetCoord(2);
 					int atk_num = board[player * num_terrs_ + coord_from];
-					if (!game_->abstraction_[1])
+					if (!risk_parent_game_->abstraction_[1])
 					{
 						for (int i = 0; i < atk_num - 1; ++i)
 						{
@@ -1102,7 +1114,7 @@ namespace open_spiel
 					}
 					else
 					{
-						std::vector<int> abs = GetAbstraction(atk_num - 1,game_->action_q_[1]);
+						std::vector<int> abs = GetAbstraction(atk_num - 1,risk_parent_game_->action_q_[1]);
 						for (size_t i = 0; i < abs.size(); ++i)
 						{
 							res.push_back(abs[i] + phse_constants_[4]);
@@ -1116,7 +1128,7 @@ namespace open_spiel
 					int coord_from = GetCoord(3);
 					int redist_num = board[player * num_terrs_ + coord_from];
 					res.push_back(0 + phse_constants_[5]);
-					if (!game_->abstraction_[2])
+					if (!risk_parent_game_->abstraction_[2])
 					{
 						for (int i = 0; i < redist_num - 1; ++i)
 						{
@@ -1125,7 +1137,7 @@ namespace open_spiel
 					}
 					else
 					{
-						std::vector<int> abs = GetAbstraction(redist_num - 1, game_->action_q_[2]);
+						std::vector<int> abs = GetAbstraction(redist_num - 1, risk_parent_game_->action_q_[2]);
 						for (size_t i = 0; i < abs.size(); ++i)
 						{
 							res.push_back(abs[i] + 1 + phse_constants_[5]);
@@ -1145,7 +1157,7 @@ namespace open_spiel
 						{
 							for (int j = 0; j < num_terrs_; ++j)
 							{
-								if (troop_arr[j] && game_->adj_matrix_[i][j] && i != j)
+								if (troop_arr[j] && risk_parent_game_->adj_matrix_[i][j] && i != j)
 								{
 									//std::cout << phse_constants_[6] + 1 + i<<std::endl;
 									res.push_back(phse_constants_[6] + 1 + i);
@@ -1176,7 +1188,7 @@ namespace open_spiel
 				{
 					int from_coord = GetCoord(6);
 					std::vector<int> troop_arr = GetTroopArr(player);
-					if (!game_->abstraction_[3])
+					if (!risk_parent_game_->abstraction_[3])
 					{
 						for (int i = 0; i < troop_arr[from_coord]; ++i)
 						{
@@ -1185,7 +1197,7 @@ namespace open_spiel
 					}
 					else
 					{
-						std::vector<int> abs = GetAbstraction(troop_arr[from_coord] - 1,game_->action_q_[3]);
+						std::vector<int> abs = GetAbstraction(troop_arr[from_coord] - 1,risk_parent_game_->action_q_[3]);
 						for (int i = 0; i != abs.size(); ++i)
 						{
 							res.push_back(abs[i] + phse_constants_[8]);
@@ -1195,8 +1207,9 @@ namespace open_spiel
 				}
 				}
 			}
-			/*std::cout<<"Phse: "+std::to_string(GetPhse())<<std::endl;
-			if(res.empty()){
+			std::cout<<"Phse: "+std::to_string(GetPhse())<<std::endl;
+			
+			/*if(res.empty()){
 				std::cout<<"Empty legal action"<<std::endl;
 			}*/
 
@@ -1241,14 +1254,14 @@ namespace open_spiel
 					break;
 				}
 				case 1:
-					if (!game_->abstraction_[0])
+					if (!risk_parent_game_->abstraction_[0])
 					{
 
 						Deploy(t_action + 1);
 					}
 					else
 					{
-						Deploy(RetAbstraction(t_action, game_->action_q_[0]));
+						Deploy(RetAbstraction(t_action, risk_parent_game_->action_q_[0]));
 					}
 					break;
 				case 2:
@@ -1265,13 +1278,13 @@ namespace open_spiel
 					SetCoord(t_action);
 					break;
 				case 4:
-					if (!game_->abstraction_[1])
+					if (!risk_parent_game_->abstraction_[1])
 					{
 						SetAtkNum(t_action + 1);
 					}
 					else
 					{
-						SetAtkNum(RetAbstraction(t_action, game_->action_q_[1]));
+						SetAtkNum(RetAbstraction(t_action, risk_parent_game_->action_q_[1]));
 					}
 					SetChance(1);
 					break;
@@ -1280,13 +1293,13 @@ namespace open_spiel
 					{
 						SetAttack();
 					}
-					else if (!game_->abstraction_[2])
+					else if (!risk_parent_game_->abstraction_[2])
 					{
 						Redistribute(t_action);
 					}
 					else
 					{
-						Redistribute(RetAbstraction(t_action - 1, game_->action_q_[2]));
+						Redistribute(RetAbstraction(t_action - 1, risk_parent_game_->action_q_[2]));
 					}
 					break;
 				case 6:
@@ -1303,13 +1316,13 @@ namespace open_spiel
 					SetCoord(t_action);
 					break;
 				case 8:
-					if (!game_->abstraction_[3])
+					if (!risk_parent_game_->abstraction_[3])
 					{
 						Fortify(t_action + 1);
 					}
 					else
 					{
-						Fortify(RetAbstraction(t_action, game_->action_q_[3]));
+						Fortify(RetAbstraction(t_action, risk_parent_game_->action_q_[3]));
 					}
 					break;
 				}
@@ -1330,7 +1343,7 @@ namespace open_spiel
 				arr[i] = GetEliminated(i);
 				if (arr[i] == 0)
 				{
-					split_rewards += game_->rewards_[num_players_ - split - 1];
+					split_rewards += risk_parent_game_->rewards_[num_players_ - split - 1];
 					split += 1;
 				}
 			}
@@ -1339,7 +1352,7 @@ namespace open_spiel
 			{
 				if (arr[i] != 0)
 				{
-					res[i]=game_->rewards_[arr[i] - 1];
+					res[i]=risk_parent_game_->rewards_[arr[i] - 1];
 				}
 				else
 				{
@@ -1391,7 +1404,7 @@ namespace open_spiel
 		bool RiskState::IsTerminal() const
 		{
             //std::cout<<"State:IsTerminal \n";
-			if (GetMaxElim() == num_players_ || GetTurns() >= max_turns_)
+			if (GetMaxElim() == num_players_ || GetTurns() >= risk_parent_game_->max_turns_)
 			{
 				return true;
 			}
@@ -1454,12 +1467,12 @@ namespace open_spiel
 		RiskGame::RiskGame(const GameParameters& params)
 			: Game(kGameType, params), num_players_(ParameterValue<int>("players")),
 			map_(ParameterValue<int>("map")),max_turns_(ParameterValue<int>("max_turns")),
-			abstraction_({ ParameterValue<bool>("dep_abs"),ParameterValue<bool>("atk_abs"),ParameterValue<bool>("redist_abs"),ParameterValue<bool>("fort_abs") }),
-			action_q_({ ParameterValue<int>("dep_q"),ParameterValue<int>("atk_q"),ParameterValue<int>("redist_q"),ParameterValue<int>("fort_q") }),
-			adj_matrix_(AdjMatrixer(ParameterValue<int>("map"))),cont_matrix_(ContMatrixer(ParameterValue<int>("map"))),cont_bonus_(ContBonuser(ParameterValue<int>("map"))),
-			rewards_(Rewarder(ParameterValue<int)("players")),assist_(Assister(ParameterValue<int>("players"))),card_arr_(CardArrer(ParameterValue<int>("map"))),terr_names_(TerrNamer(ParameterValue<int>("map"))),
-			starting_troops_(40-5*(ParameterValue<int>("players")-2))
-			rng_(std::mt19937(ParameterValue<int>("rng_seed") == -1,
+			abstraction_{ ParameterValue<bool>("dep_abs"),ParameterValue<bool>("atk_abs"),ParameterValue<bool>("redist_abs"),ParameterValue<bool>("fort_abs") },
+			action_q_{ ParameterValue<int>("dep_q"),ParameterValue<int>("atk_q"),ParameterValue<int>("redist_q"),ParameterValue<int>("fort_q")},
+			adj_matrix_{AdjMatrixer(ParameterValue<int>("map"))},cont_matrix_{ContMatrixer(ParameterValue<int>("map"))},cont_bonus_{ContBonuser(ParameterValue<int>("map"))},
+			rewards_{Rewarder(ParameterValue<int>("players"))},assist_{Assister(ParameterValue<int>("players"))},card_arr_{CardArrer(ParameterValue<int>("map"))},terr_names_{TerrNamer(ParameterValue<int>("map"))},
+			starting_troops_{40-5*(ParameterValue<int>("players")-2)},
+			rng_(std::mt19937(ParameterValue<int>("rng_seed") == -1
 				? std::time(0)
 				: ParameterValue<int>("rng_seed")))
 		{
@@ -1484,14 +1497,15 @@ namespace open_spiel
 			// One-hot encoding for the single private card. (n+1 cards = n+1 bits)
 			// Followed by the contribution of each player to the pot (n).
 			// n + n + 1 + n = 3n + 1.
+			int num_terrs_ = adj_matrix_.size();
 			return {num_players_ * num_terrs_ + 2 * num_players_ + 16 + 6 * num_terrs_ + num_players_ * (num_players_ - 1)};
 		}
-		int NumDistinctActions() {
+		int RiskGame::NumDistinctActions() const {
 			int sum = 0;
 			for (int i = 0; i < 4; ++i) {
 				sum += action_q_[i];
 			}
-			sum += 4 + (int)adj_matrix_.size();
+			sum += 4 + 5*(int)adj_matrix_.size();
 			return sum;
 		}
 
@@ -1517,4 +1531,4 @@ namespace open_spiel
 
 	} // namespace risk
 
-} // namespace open_spiel
+}// namespace open_spiel

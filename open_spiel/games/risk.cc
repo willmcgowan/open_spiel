@@ -165,7 +165,7 @@ namespace open_spiel
 
 				if (iig_obs_type_.private_info == PrivateInfoType::kSinglePlayer)
 				{
-					// The player's card, if one has been dealt.
+					//the player in question's hand//
 					auto out = allocator->Get("private_cards", {num_terrs + 2});
 					auto hand = state.GetHand(player);
 					for (int i = 0; i < num_terrs + 2; ++i)
@@ -174,7 +174,6 @@ namespace open_spiel
 					}
 				}
 
-				// Betting sequence.
 				if (iig_obs_type_.public_info && !iig_obs_type_.perfect_recall)
 				{
 					auto out = allocator->Get("board", {num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs + num_players * (num_players - 1)});
@@ -1439,6 +1438,17 @@ namespace open_spiel
         {
             //std::cout<<"State:Clone \n";
 			return std::unique_ptr<RiskState>(new RiskState(*this));
+		}
+		std::string RiskState::ActionToString(Player player, Action action_id) const {
+			return std::to_string(action_id);
+		}
+		std::string RiskState::ToString() const {
+			std::string out;
+			for (int i = 0; i < board.size(); ++i) {
+				out.append(std::to_string(board[i]));
+				out.append(",");
+			}
+			return out;
 		}
 
 		RiskGame::RiskGame(const GameParameters& params)

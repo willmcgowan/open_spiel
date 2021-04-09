@@ -171,19 +171,14 @@ class RiskState : public State {
   std::vector<std::pair<Action, double>> ChanceOutcomes() const override;
   std::vector<Action> LegalChanceOutcomes() const override;
   std::vector<Action> LegalActions() const override;
-  std::string ToString() const override {
-      return "0";
-  }
-  std::string ActionToString(Player player, Action action_id) const override {
-      return "0";
-  }
+  std::string ToString() const override;
+  std::string ActionToString(Player player, Action action_id) const override;
  
 
 protected:
   void DoApplyAction(Action move) override;
   int num_terrs_;
   std::vector<int> board;
-  //for no abstraction represents how many troops from 1 to that number that can be utilised, if abstraction then it represents number of bins
   std::array<int, 9> phse_constants_;
  private:
   friend class RiskObserver;

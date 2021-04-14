@@ -1175,7 +1175,6 @@ namespace open_spiel
 			int player = GetPlayer();
 			if (action_id == 0 && GetChance())
 			{
-				std::cout<<"Phse:"+std::to_string(GetPhse())<<std::endl;
 				switch (GetPhse())
 				{
 				case 4:

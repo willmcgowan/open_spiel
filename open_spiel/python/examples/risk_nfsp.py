@@ -61,7 +61,7 @@ class NFSPPolicies(policy.Policy):
 
 
 def main(unused_argv):
-  game = "Risk"
+  game = "risk"
   num_players = 2
 
   env_configs = {"players": num_players,"map":0,"rng_seed":-1,"max_turns":90,"dep_abs":False,"atk_abs":True,"redist_abs":True,"fort_abs":True,"dep_q":31,"atk_q":2,"redist_q":2,"fort_q":2}

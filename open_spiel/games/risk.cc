@@ -691,7 +691,7 @@ namespace open_spiel
 			board[2 * num_players_ * num_terrs_ + 5 + 9 + 5 * num_terrs_ + 3 * num_players_ + victim * (num_players_ - 1) + max] = 1;
 		}
 
-		void RiskState::Deal()
+		void RiskState::Deal(long seed)
 		{
 			int player = GetPlayer();
 			assert(GetChance() == 1);
@@ -706,9 +706,8 @@ namespace open_spiel
 			}
 			auto sig = GetHandSig(player);
 			//this may be belt and braces bruh//
-			random_seed = risk_parent_game_->RNG();
-			std::mt19937 gen(random_seed);
 			std::uniform_int_distribution<> distrib(0, internal_deck.size() - 1);
+			std::mt19937 gen(seed);
 			int choice = distrib(gen);
 			int card = internal_deck[choice];
 			SetCard(player, card, 1);
@@ -824,7 +823,7 @@ namespace open_spiel
 			}
 		}
 
-		void RiskState::Attack()
+		void RiskState::Attack(long seed)
 		{
 			double prob_arr[6][2] = {{0.2925668724279835, 0.628343621399177}, {0.3402777777777778, 1.0}, {0.44830246913580246, 0.7723765432098766}, {0.4212962962962963, 1.0}, {0.7453703703703703, 1.0}, {0.5833333333333334, 1.0}};
 			std::unordered_map<int, int> dict = { {10,0},{4,1},{8,2},{3,3},{2,5},{6,4}};
@@ -835,11 +834,10 @@ namespace open_spiel
 			int def_player = GetOwner(coord_to);
 			int n_def = board[num_terrs_ * def_player + coord_to];
 			int start_amount = n_atk;
+			std::mt19937 gen(seed);
 			while (n_atk > 0 && n_def > 0)
 			{
 				//this may also be belt and braces//
-				random_seed = risk_parent_game_->RNG();
-				std::mt19937 gen(random_seed);
 				std::uniform_real_distribution<> distrib(0, 1);
 				double randnum = distrib(gen);
 				int atk_dice = std::min(3, n_atk);
@@ -1186,21 +1184,22 @@ namespace open_spiel
 			return res;
 		}
 
-		void RiskState::DoApplyAction(Action action_id)
+		void RiskState::ActionHandler(Action action_id,long seed)
 		{
 			int player = GetPlayer();
 			if (action_id == 0 && GetChance())
 			{
+				std::cout<<"Phse:"+std::to_string(GetPhse())<<std::endl;
 				switch (GetPhse())
 				{
 				case 4:
-					Attack();
+					Attack(seed);
 					break;
 				case 6:
-					Deal();
+					Deal(seed);
 					break;
 				case 8:
-					Deal();
+					Deal(seed);
 					break;
 				}
 				return;
@@ -1296,8 +1295,13 @@ namespace open_spiel
 					break;
 				}
 			}
-			/*history_.push_back({CurrentPlayer(), action_id});
-			move_number_ += 1;*/
+		}
+		void RiskState::DoApplyAction(Action action_id){
+			if(IsChanceNode()){
+				random_seed = risk_parent_game_->RNG();
+			}
+			ActionHandler(action_id,random_seed);
+			random_seeds.push_back(random_seed);
 		}
 
 		std::vector<double> RiskState::Rewards() const
@@ -1424,6 +1428,14 @@ namespace open_spiel
 			}
 			return out;
 		}
+		std::string RiskState::Serialize() const{
+			std::vector<Action> history = History();
+			std::string str = "";
+			for(int i =0;i<history.size();++i){
+				str.append(std::to_string(history[i])+" "+std::to_string(random_seeds[i])+"\n");
+			}
+			return str;
+		}
 
 		RiskGame::RiskGame(const GameParameters& params)
 			: Game(kGameType, params), num_players_(ParameterValue<int>("players")),
@@ -1447,10 +1459,16 @@ namespace open_spiel
 								   .perfect_recall = false,
 								   .private_info = PrivateInfoType::kNone});
 		}
-		std::unique_ptr<State> RiskGame::NewInitialState() const {
+		
+		std::unique_ptr<RiskState> RiskGame::NewInitialRiskState() const {
             const auto ptr =std::dynamic_pointer_cast<const RiskGame>(shared_from_this());
 			return std::make_unique<RiskState>(ptr);
 		}
+		
+		std::unique_ptr<State> RiskGame::NewInitialState() const {
+  			return NewInitialRiskState();
+		}
+
 
 		std::vector<int> RiskGame::ObservationTensorShape() const {
 			// One-hot for whose turn it is.
@@ -1487,6 +1505,19 @@ namespace open_spiel
 		}
 
 		int RiskGame::RNG() const { return rng_(); }
+		std::unique_ptr<State> RiskGame::DeserializeState(const std::string& str) const{
+			std::unique_ptr<RiskState> state = NewInitialRiskState();
+			if(str.empty()) return state;
+			std::vector<std::string> lines = absl::StrSplit(str, '\n');
+			for(int i =0;i<lines.size();++i){
+				std::vector<std::string> splittage = absl::StrSplit(lines[i]," ");
+				Action act = std::stol(splittage[0]);
+				long seed = std::stol(splittage[1]);
+				state->ActionHandler(act,seed);
+				state->history_.push_back({state->CurrentPlayer(),act});
+			}
+			return state;
+		}
 
 	} // namespace risk
 

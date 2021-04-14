@@ -90,7 +90,7 @@ namespace risk {
     const std::vector<std::string> ClassicTerrNames = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
     const std::vector<std::vector<double>> RewardsArr{ {-1, 1}, {-1, -1, 2}, {-1, -1, -1, 3}, {-1, -1, -1, -1, 4}, {-1, -1, -1, -1, -1, 5} };
     const std::vector<std::vector<int>> AssistsArr{ {0, 3}, {0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 1, 2}, {0, 0, 0, 1, 2, 3} };
-    inline constexpr int kDefaultSeed = -1;
+    inline constexpr int kDefaultSeed = 1;
 
 class RiskGame;
 class RiskObserver;
@@ -144,17 +144,17 @@ class RiskState : public State {
  int GetMaxElim() const;//gets the total num of elims
  void EndTurn();//ends the turn of the current player and mutates board accordingly
  void Eliminate(int victim, int victor);//handles the player elimination process
- void Deal();//handles the card dealing process
+ void Deal(long seed);//handles the card dealing process
  void Cash();//handles the card cashing process
  void Income();//handles the income distrib process
  void Deploy(int amount);//handles the act of deploying
- void Attack();//handles the attack process
+ void Attack(long seed);//handles the attack process
  void Redistribute(int amount);//handles the redistrib process
  void Fortify(int amount);//handles the fortify process
  void DepthFirstSearch(int player, int vertex, std::vector<bool>* out) const;//used to determine legal fortifies given a chosen territory to fortify from//
  std::vector<int> GetAbstraction(int num, int abs) const;//pretty hacky way to reduce number of actions
  int RetAbstraction(int action, int abs) const;//ditto
-
+ void ActionHandler(Action action_id,long seed) ;
 
   //open spiel things//   
   explicit RiskState(std::shared_ptr<const RiskGame> game);
@@ -173,7 +173,7 @@ class RiskState : public State {
   std::vector<Action> LegalActions() const override;
   std::string ToString() const override;
   std::string ActionToString(Player player, Action action_id) const override;
- 
+  std::string Serialize() const override;
 
 protected:
   void DoApplyAction(Action move) override;
@@ -182,7 +182,9 @@ protected:
   std::array<int, 9> phse_constants_;
  private:
   friend class RiskObserver;
-  int random_seed = kDefaultSeed;
+  friend class RiskGame;
+  long random_seed = kDefaultSeed;
+  std::vector<long> random_seeds = {};
   std::shared_ptr<const RiskGame> risk_parent_game_;
 };
 
@@ -191,6 +193,7 @@ public:
       explicit RiskGame(const GameParameters& params);
       int NumDistinctActions() const override;
       std::unique_ptr<State> NewInitialState() const override;
+      std::unique_ptr<RiskState> NewInitialRiskState() const;
       int MaxChanceOutcomes() const override { return 1; }
       int NumPlayers() const override { return num_players_; }
       double MinUtility() const override { return rewards_[0]; };
@@ -210,6 +213,9 @@ public:
 
       std::string GetRNGState() const override;
       void SetRNGState(const std::string& rng_state) const override;
+
+      std::unique_ptr<State> DeserializeState(
+      const std::string& str) const override;
 
  private:
      // Number of players.

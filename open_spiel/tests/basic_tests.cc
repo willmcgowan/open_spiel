@@ -294,7 +294,7 @@ void RandomSimulation(std::mt19937* rng, const Game& game, bool undo,
     std::cout << "Starting new game.." << std::endl;
   }
   std::unique_ptr<open_spiel::State> state = game.NewInitialState();
-
+  
   if (verbose) {
     std::cout << "Initial state:" << std::endl;
     std::cout << "State:" << std::endl << state->ToString() << std::endl;
@@ -391,9 +391,11 @@ void RandomSimulation(std::mt19937* rng, const Game& game, bool undo,
       if (state->IsTerminal())
         SPIEL_CHECK_TRUE(actions.empty());
       else
+        if (actions.empty())
         SPIEL_CHECK_FALSE(actions.empty());
       std::uniform_int_distribution<int> dis(0, actions.size() - 1);
       Action action = actions[dis(*rng)];
+      
 
       if (verbose) {
         std::cout << "chose action: " << action << " ("

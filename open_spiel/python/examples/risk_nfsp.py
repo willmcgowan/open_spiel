@@ -21,7 +21,7 @@ flags.DEFINE_integer("num_train_episodes", int(1e5),
 flags.DEFINE_integer("eval_every", 1000,
                      "Episode frequency at which the agents are evaluated.")
 flags.DEFINE_list("hidden_layers_sizes", [
-    174,
+    174,174,174,174
 ], "Number of hidden units in the avg-net and Q-net.")
 flags.DEFINE_integer("replay_buffer_capacity", int(1e3),
                      "Size of the replay buffer.")

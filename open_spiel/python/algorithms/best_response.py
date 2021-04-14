@@ -63,7 +63,7 @@ def compute_states_and_info_states_if_none(game,
   if all_states is None:
     all_states = get_all_states.get_all_states(
         game,
-        depth_limit=-1,
+        depth_limit=15,
         include_terminals=False,
         include_chance_states=False)
 

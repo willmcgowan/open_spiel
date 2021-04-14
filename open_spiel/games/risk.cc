@@ -1503,6 +1503,7 @@ namespace open_spiel
 				long seed = std::stol(splittage[1]);
 				state->ActionHandler(act,seed);
 				state->history_.push_back({state->CurrentPlayer(),act});
+				state->move_number_+=1;
 			}
 			return state;
 		}

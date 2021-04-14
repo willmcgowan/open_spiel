@@ -1,16 +1,4 @@
-// Copyright 2019 DeepMind Technologies Ltd. All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
 
 #ifndef OPEN_SPIEL_GAMES_RISK_H_
 #define OPEN_SPIEL_GAMES_RISK_H_
@@ -24,18 +12,7 @@
 #include "open_spiel/policy.h"
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
-
-// A simple game that includes chance and imperfect information
-// http://en.wikipedia.org/wiki/Kuhn_poker
-//
-// For more information on this game (e.g. equilibrium sets, etc.) see
-// http://poker.cs.ualberta.ca/publications/AAAI05.pdf
-//
-// The multiplayer (n>2) version is the one described in
-// http://mlanctot.info/files/papers/aamas14sfrd-cfr-kuhn.pdf
-//
-// Parameters:
-// none rn because am stupid but maybe later all the varst that are used as constants like ast_vect and the map could be params; bn  
+ 
 
 //current documentation on form of board attribute ie the world state//
 //[0:kNumPlayers*kNumTerrs]=player troops
@@ -90,7 +67,7 @@ namespace risk {
     const std::vector<std::string> ClassicTerrNames = { "East Aus.", "West Aus.", "New Guinea", "Indonesia", "Siam", "China", "India", "Mongolia", "Afghanistan", "Japan", "Ural", "Siberia", "Irkutsk", "Yakutsk", "Kamchatka", "Alaska", "N.W. Territory", "Greenland", "Quebec", "Ontario", "Alberta", "West U.S", "East U.S", "C. America", "Venezuela", "Peru", "Argentina", "Brazil", "N. Africa", "C. Africa", "S. Africa", "Madagascar", "E. Africa", "Egypt", "Middle East", "S. Europe", "W. Europe", "Great Britain", "Iceland", "Scandinavia", "Ukraine", "N. Europe" };
     const std::vector<std::vector<double>> RewardsArr{ {-1, 1}, {-1, -1, 2}, {-1, -1, -1, 3}, {-1, -1, -1, -1, 4}, {-1, -1, -1, -1, -1, 5} };
     const std::vector<std::vector<int>> AssistsArr{ {0, 3}, {0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 1, 2}, {0, 0, 0, 1, 2, 3} };
-    inline constexpr int kDefaultSeed = 1;
+    inline constexpr int kDefaultSeed = -1;
 
 class RiskGame;
 class RiskObserver;

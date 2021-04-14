@@ -1,18 +1,4 @@
-// Copyright 2019 DeepMind Technologies Ltd. All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
-//invalid use of non valid datamember for type decls in risk.hy
 #include "open_spiel/games/risk.h"
 
 #include <algorithm>
@@ -30,7 +16,7 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
 
-//might need to change the current chance action id to zero etc for reasons//
+
 namespace open_spiel
 {
 
@@ -51,7 +37,7 @@ namespace open_spiel
 			constexpr int kDefaultAtkQ = 1000;
 			constexpr int kDefaultRedistQ = 1000;
 			constexpr int kDefaultFortQ = 1000;
-			constexpr int kDefaultSeed = -1;
+			//constexpr int kDefaultSeed = 1;
 
 			// Facts about the game
 			const GameType kGameType{

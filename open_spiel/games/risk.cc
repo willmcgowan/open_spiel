@@ -1424,7 +1424,9 @@ namespace open_spiel
 			std::string out;
 			for (int i = 0; i < board.size(); ++i) {
 				out.append(std::to_string(board[i]));
-				out.append(",");
+				if(i!=board.size()-1){
+					out.append(",");
+				}
 			}
 			return out;
 		}

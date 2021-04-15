@@ -21,7 +21,7 @@ flags.DEFINE_integer("num_train_episodes", int(1e5),
 flags.DEFINE_integer("eval_every", 1000,
                      "Episode frequency at which the agents are evaluated.")
 flags.DEFINE_list("hidden_layers_sizes", [
-    174,174,174,174
+    174,174,174
 ], "Number of hidden units in the avg-net and Q-net.")
 flags.DEFINE_integer("replay_buffer_capacity", int(1e3),
                      "Size of the replay buffer.")
@@ -91,8 +91,8 @@ def main(unused_argv):
       if (ep + 1) % FLAGS.eval_every == 0:
         losses = [agent.loss for agent in agents]
         logging.info("Losses: %s", losses)
-        expl = exploitability.exploitability(env.game, expl_policies_avg)
-        logging.info("[%s] Exploitability AVG %s", ep + 1, expl)
+        #expl = exploitability.exploitability(env.game, expl_policies_avg)
+        #logging.info("[%s] Exploitability AVG %s", ep + 1, expl)
         logging.info("_____________________________________________")
 
       time_step = env.reset()

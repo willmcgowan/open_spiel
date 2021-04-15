@@ -7,6 +7,7 @@
 #include <utility>
 #include <iostream>
 #include <unordered_map>
+#include <assert.h>
 
 #include "open_spiel/abseil-cpp/absl/strings/str_cat.h"
 #include "open_spiel/fog/fog_constants.h"
@@ -1166,7 +1167,7 @@ namespace open_spiel
 				}
 				}
 			}
-
+			assert(res.size()>0);
 			return res;
 		}
 

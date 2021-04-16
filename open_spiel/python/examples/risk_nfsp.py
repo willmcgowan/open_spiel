@@ -1,8 +1,4 @@
-"""NFSP agents trained on simplified Risk."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+"""NFSP agents trained on simplified risk."""
 
 from absl import app
 from absl import flags
@@ -16,9 +12,13 @@ from open_spiel.python.algorithms import nfsp
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_string("game_name", "risk",
+                    "Name of the game.")
+flags.DEFINE_integer("num_players", 2,
+                     "Number of players.")
 flags.DEFINE_integer("num_train_episodes", int(1e5),
                      "Number of training episodes.")
-flags.DEFINE_integer("eval_every", 1000,
+flags.DEFINE_integer("eval_every", 100,
                      "Episode frequency at which the agents are evaluated.")
 flags.DEFINE_list("hidden_layers_sizes", [
     174,174,174
@@ -27,8 +27,35 @@ flags.DEFINE_integer("replay_buffer_capacity", int(1e3),
                      "Size of the replay buffer.")
 flags.DEFINE_integer("reservoir_buffer_capacity", int(1e4),
                      "Size of the reservoir buffer.")
+flags.DEFINE_integer("min_buffer_size_to_learn", 1000,
+                     "Number of samples in buffer before learning begins.")
 flags.DEFINE_float("anticipatory_param", 0.1,
                    "Prob of using the rl best response as episode policy.")
+flags.DEFINE_integer("batch_size", 128,
+                     "Number of transitions to sample at each learning step.")
+flags.DEFINE_integer("learn_every", 64,
+                     "Number of steps between learning updates.")
+flags.DEFINE_float("rl_learning_rate", 0.01,
+                   "Learning rate for inner rl agent.")
+flags.DEFINE_float("sl_learning_rate", 0.01,
+                   "Learning rate for avg-policy sl network.")
+flags.DEFINE_string("optimizer_str", "sgd",
+                    "Optimizer, choose from 'adam', 'sgd'.")
+flags.DEFINE_string("loss_str", "mse",
+                    "Loss function, choose from 'mse', 'huber'.")
+flags.DEFINE_integer("update_target_network_every", 19200,
+                     "Number of steps between DQN target network updates.")
+flags.DEFINE_float("discount_factor", 1.0,
+                   "Discount factor for future rewards.")
+flags.DEFINE_integer("epsilon_decay_duration", int(1e5),
+                     "Number of game steps over which epsilon is decayed.")
+flags.DEFINE_float("epsilon_start", 0.06,
+                   "Starting exploration parameter.")
+flags.DEFINE_float("epsilon_end", 0.001,
+                   "Final exploration parameter.")
+flags.DEFINE_bool("use_checkpoints", True, "Save/load neural network weights.")
+flags.DEFINE_string("checkpoint_dir", "/tmp/nfsp_test",
+                    "Directory to save/load the agent.")
 
 
 class NFSPPolicies(policy.Policy):
@@ -36,11 +63,14 @@ class NFSPPolicies(policy.Policy):
 
   def __init__(self, env, nfsp_policies, mode):
     game = env.game
-    player_ids = [0, 1]
+    player_ids = list(range(FLAGS.num_players))
     super(NFSPPolicies, self).__init__(game, player_ids)
     self._policies = nfsp_policies
     self._mode = mode
-    self._obs = {"info_state": [None, None], "legal_actions": [None, None]}
+    self._obs = {
+        "info_state": [None] * FLAGS.num_players,
+        "legal_actions": [None] * FLAGS.num_players
+    }
 
   def action_probabilities(self, state, player_id=None):
     cur_player = state.current_player()
@@ -61,8 +91,9 @@ class NFSPPolicies(policy.Policy):
 
 
 def main(unused_argv):
-  game = "risk"
-  num_players = 2
+  logging.info("Loading %s", FLAGS.game_name)
+  game = FLAGS.game_name
+  num_players = FLAGS.num_players
 
   env_configs = {"players": num_players,"map":0,"rng_seed":-1,"max_turns":90,"dep_abs":False,"atk_abs":True,"redist_abs":True,"fort_abs":True,"dep_q":31,"atk_q":2,"redist_q":2,"fort_q":2}
   env = rl_environment.Environment(game, **env_configs)
@@ -72,27 +103,44 @@ def main(unused_argv):
   hidden_layers_sizes = [int(l) for l in FLAGS.hidden_layers_sizes]
   kwargs = {
       "replay_buffer_capacity": FLAGS.replay_buffer_capacity,
-      "epsilon_decay_duration": FLAGS.num_train_episodes,
-      "epsilon_start": 0.06,
-      "epsilon_end": 0.001,
+      "reservoir_buffer_capacity": FLAGS.reservoir_buffer_capacity,
+      "min_buffer_size_to_learn": FLAGS.min_buffer_size_to_learn,
+      "anticipatory_param": FLAGS.anticipatory_param,
+      "batch_size": FLAGS.batch_size,
+      "learn_every": FLAGS.learn_every,
+      "rl_learning_rate": FLAGS.rl_learning_rate,
+      "sl_learning_rate": FLAGS.sl_learning_rate,
+      "optimizer_str": FLAGS.optimizer_str,
+      "loss_str": FLAGS.loss_str,
+      "update_target_network_every": FLAGS.update_target_network_every,
+      "discount_factor": FLAGS.discount_factor,
+      "epsilon_decay_duration": FLAGS.epsilon_decay_duration,
+      "epsilon_start": FLAGS.epsilon_start,
+      "epsilon_end": FLAGS.epsilon_end,
   }
 
   with tf.Session() as sess:
     # pylint: disable=g-complex-comprehension
     agents = [
         nfsp.NFSP(sess, idx, info_state_size, num_actions, hidden_layers_sizes,
-                  FLAGS.reservoir_buffer_capacity, FLAGS.anticipatory_param,
                   **kwargs) for idx in range(num_players)
     ]
-    expl_policies_avg = NFSPPolicies(env, agents, nfsp.MODE.average_policy)
+    joint_avg_policy = NFSPPolicies(env, agents, nfsp.MODE.average_policy)
 
     sess.run(tf.global_variables_initializer())
+
+    if FLAGS.use_checkpoints:
+      for agent in agents:
+        if agent.has_checkpoint(FLAGS.checkpoint_dir):
+          agent.restore(FLAGS.checkpoint_dir)
+
     for ep in range(FLAGS.num_train_episodes):
       if (ep + 1) % FLAGS.eval_every == 0:
         losses = [agent.loss for agent in agents]
         logging.info("Losses: %s", losses)
-        #expl = exploitability.exploitability(env.game, expl_policies_avg)
-        #logging.info("[%s] Exploitability AVG %s", ep + 1, expl)
+        if FLAGS.use_checkpoints:
+          for agent in agents:
+            agent.save(FLAGS.checkpoint_dir)
         logging.info("_____________________________________________")
 
       time_step = env.reset()

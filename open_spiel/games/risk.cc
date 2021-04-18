@@ -52,7 +52,7 @@ namespace open_spiel
 				/*max_num_players=*/6,
 				/*min_num_players=*/2,
 				/*provides_information_state_string=*/false,
-				/*provides_information_state_tensor=*/false,
+				/*provides_information_state_tensor=*/true,
 				/*provides_observation_string=*/false,
 				/*provides_observation_tensor=*/true,
 				/*parameter_specification=*/
@@ -161,6 +161,7 @@ namespace open_spiel
 				const int num_players = state.num_players_;
 				const int num_terrs = state.num_terrs_;
 
+				//have added in asserts to check
 				if (iig_obs_type_.private_info == PrivateInfoType::kSinglePlayer)
 				{
 					//the player in question's hand//
@@ -168,6 +169,7 @@ namespace open_spiel
 					auto hand = state.GetHand(player);
 					for (int i = 0; i < num_terrs + 2; ++i)
 					{
+						assert(std::isnormal(hand[i]));
 						out.at(i) = hand[i];
 					}
 				}
@@ -177,14 +179,17 @@ namespace open_spiel
 					auto out = allocator->Get("board", {num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs + num_players * (num_players - 1)});
 					for (int i = 0; i < num_players * num_terrs + num_players + 14 + 5 * num_terrs; ++i)
 					{
+						assert(std::isnormal(state.board[i]));
 						out.at(i) = state.board[i];
 					}
 					for (int i = 0; i < num_players; ++i)
 					{
+						assert(std::isnormal(state.GetHandSum(i)));
 						out.at(i + num_players * num_terrs + num_players + 14 + 5 * num_terrs) = state.GetHandSum(i);
 					}
 					for (int i = 0; i < num_players * (num_players - 1); ++i)
 					{
+						assert(std::isnormal(state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players]));
 						out.at(i + num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs) = state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players];
 					}
 				}
@@ -1399,6 +1404,13 @@ namespace open_spiel
 			game.default_observer_->WriteTensor(*this, player, &allocator);
 		}
 
+		void RiskState::InformationStateTensor(Player player,
+			absl::Span<float> values) const {
+			ContiguousAllocator allocator(values);
+			const KuhnGame& game = open_spiel::down_cast<const KuhnGame&>(*game_);
+			game.default_observer_->WriteTensor(*this, player, &allocator);
+		}
+
 		std::unique_ptr<State> RiskState::Clone() const
         {
 			return std::unique_ptr<RiskState>(new RiskState(*this));
@@ -1459,13 +1471,16 @@ namespace open_spiel
 
 
 		std::vector<int> RiskGame::ObservationTensorShape() const {
-			// One-hot for whose turn it is.
-			// One-hot encoding for the single private card. (n+1 cards = n+1 bits)
-			// Followed by the contribution of each player to the pot (n).
-			// n + n + 1 + n = 3n + 1.
 			int num_terrs_ = adj_matrix_.size();
 			return {num_players_ * num_terrs_ + 2 * num_players_ + 16 + 6 * num_terrs_ + num_players_ * (num_players_ - 1)};
 		}
+		
+		std::vector<int> RiskGame::InformationStateTensorShape() const {
+			int num_terrs_ = adj_matrix_.size();
+			return { num_players_ * num_terrs_ + 2 * num_players_ + 16 + 6 * num_terrs_ + num_players_ * (num_players_ - 1) };
+		}
+
+
 		int RiskGame::NumDistinctActions() const {
 			int sum = 0;
 			for (int i = 0; i < 4; ++i) {

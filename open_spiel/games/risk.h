@@ -144,6 +144,8 @@ class RiskState : public State {
   bool IsPlayerNode() const override;
   void ObservationTensor(Player player,
                          absl::Span<float> values) const override;
+  void InformationStateTensor(Player player,
+      absl::Span<float> values) const override;
   std::unique_ptr<State> Clone() const override;
   std::vector<std::pair<Action, double>> ChanceOutcomes() const override;
   std::vector<Action> LegalChanceOutcomes() const override;
@@ -177,6 +179,7 @@ public:
       double MaxUtility() const override { return rewards_[num_players_ - 1]; };
       double UtilitySum() const override { return 0; }
       std::vector<int> ObservationTensorShape() const override;
+      std::vector<int> InformationStateTensorShape() const override;
       int MaxGameLength() const override { return 100000; }//stupid big numbers to get to work
       int MaxChanceNodesInHistory() const override { return 10000; }//ditto
       std::shared_ptr<Observer> MakeObserver(

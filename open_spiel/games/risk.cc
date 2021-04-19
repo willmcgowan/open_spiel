@@ -8,7 +8,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <assert.h>
-
+#include <cmath>
 #include "open_spiel/abseil-cpp/absl/strings/str_cat.h"
 #include "open_spiel/fog/fog_constants.h"
 #include "open_spiel/game_parameters.h"
@@ -169,8 +169,8 @@ namespace open_spiel
 					auto hand = state.GetHand(player);
 					for (int i = 0; i < num_terrs + 2; ++i)
 					{
-						assert(std::isnormal(hand[i]));
-						out.at(i) = hand[i];
+						assert(std::isfinite((float) hand[i]));
+						out.at(i) = (float) hand[i];
 					}
 				}
 
@@ -179,18 +179,18 @@ namespace open_spiel
 					auto out = allocator->Get("board", {num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs + num_players * (num_players - 1)});
 					for (int i = 0; i < num_players * num_terrs + num_players + 14 + 5 * num_terrs; ++i)
 					{
-						assert(std::isnormal(state.board[i]));
-						out.at(i) = state.board[i];
+						assert(std::isfinite((float)state.board[i]));
+						out.at(i) = (float) state.board[i];
 					}
 					for (int i = 0; i < num_players; ++i)
 					{
-						assert(std::isnormal(state.GetHandSum(i)));
-						out.at(i + num_players * num_terrs + num_players + 14 + 5 * num_terrs) = state.GetHandSum(i);
+						assert(std::isfinite((float) state.GetHandSum(i)));
+						out.at(i + num_players * num_terrs + num_players + 14 + 5 * num_terrs) = (float)state.GetHandSum(i);
 					}
 					for (int i = 0; i < num_players * (num_players - 1); ++i)
 					{
-						assert(std::isnormal(state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players]));
-						out.at(i + num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs) = state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players];
+						assert(std::isfinite((float) state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players]));
+						out.at(i + num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs) = (float) state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players];
 					}
 				}
 			}
@@ -1407,7 +1407,7 @@ namespace open_spiel
 		void RiskState::InformationStateTensor(Player player,
 			absl::Span<float> values) const {
 			ContiguousAllocator allocator(values);
-			const KuhnGame& game = open_spiel::down_cast<const KuhnGame&>(*game_);
+			const RiskGame& game = open_spiel::down_cast<const RiskGame&>(*game_);
 			game.default_observer_->WriteTensor(*this, player, &allocator);
 		}
 

@@ -43,7 +43,7 @@ flags.DEFINE_string("optimizer_str", "sgd",
                     "Optimizer, choose from 'adam', 'sgd'.")
 flags.DEFINE_string("loss_str", "mse",
                     "Loss function, choose from 'mse', 'huber'.")
-flags.DEFINE_integer("update_target_network_every", 19200,
+flags.DEFINE_integer("update_target_network_every", 2000,
                      "Number of steps between DQN target network updates.")
 flags.DEFINE_float("discount_factor", 1.0,
                    "Discount factor for future rewards.")

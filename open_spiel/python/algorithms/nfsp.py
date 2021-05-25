@@ -199,7 +199,10 @@ class NFSP(rl_agent.AbstractAgent):
       if not time_step.last():
         info_state = time_step.observations["info_state"][self.player_id]
         legal_actions = time_step.observations["legal_actions"][self.player_id]
-        action, probs = self._act(info_state, legal_actions)
+        try:
+          action, probs = self._act(info_state, legal_actions)
+        except:
+          print(info_state)
         agent_output = rl_agent.StepOutput(action=action, probs=probs)
 
       if self._prev_timestep and not is_evaluation:

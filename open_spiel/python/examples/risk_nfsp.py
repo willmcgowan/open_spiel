@@ -35,9 +35,9 @@ flags.DEFINE_integer("batch_size", 128,
                      "Number of transitions to sample at each learning step.")
 flags.DEFINE_integer("learn_every", 64,
                      "Number of steps between learning updates.")
-flags.DEFINE_float("rl_learning_rate", 0.01,
+flags.DEFINE_float("rl_learning_rate", 0.001,
                    "Learning rate for inner rl agent.")
-flags.DEFINE_float("sl_learning_rate", 0.01,
+flags.DEFINE_float("sl_learning_rate", 0.001,
                    "Learning rate for avg-policy sl network.")
 flags.DEFINE_string("optimizer_str", "sgd",
                     "Optimizer, choose from 'adam', 'sgd'.")
@@ -54,7 +54,7 @@ flags.DEFINE_float("epsilon_start", 0.06,
 flags.DEFINE_float("epsilon_end", 0.001,
                    "Final exploration parameter.")
 flags.DEFINE_bool("use_checkpoints", True, "Save/load neural network weights.")
-flags.DEFINE_string("checkpoint_dir", "/tmp/nfsp_test",
+flags.DEFINE_string("checkpoint_dir", "/tmp/risk_nfsp",
                     "Directory to save/load the agent.")
 
 

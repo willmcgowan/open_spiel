@@ -964,7 +964,6 @@ namespace open_spiel
 			}
 			return (int)std::floor((action + 1) * num / abs);
 		}
-
 		// OPENSPIEL METHODS BELOW //
 
 		//obviously the most costly func//

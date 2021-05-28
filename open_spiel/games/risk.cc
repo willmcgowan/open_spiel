@@ -772,7 +772,7 @@ namespace open_spiel
 					bool sat = true;
 					for (int j = 0; j < num_terrs_; ++j)
 					{
-						if (!(!troop_mask[j] && risk_parent_game_->cont_matrix_[i][j]))
+						if (!troop_mask[j] && risk_parent_game_->cont_matrix_[i][j])
 						{
 							sat = false;
 							break;

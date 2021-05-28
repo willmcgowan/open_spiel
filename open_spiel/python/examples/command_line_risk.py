@@ -4,14 +4,25 @@ from absl import app
 from absl import flags
 from absl import logging
 import tensorflow.compat.v1 as tf
+import numpy as np
+import igraph as ig
+import cairocffi
 
 from open_spiel.python import policy
 from open_spiel.python import rl_environment
 from open_spiel.python.algorithms import exploitability
 from open_spiel.python.algorithms import nfsp
 
+simple_adj = [[0,2,11] ,[0,2,18],[3,16],[4,14,16],[5,7,14] ,[4,6,14,15],[5,7],[4,6,8],[7,9] ,[8,10] ,[11,12] ,[0,9,12],[10,11,13],[12,14,17,16],[3,4,5,13,15,16],[5,14],[2,3,13,14,17],[13,16,18],[17,1]]
+vertex_lis = []
+for i in range(len(simple_adj)):
+  for j in simple_adj[i]:
+    if (i,j) not in vertex_lis and (j,i) not in vertex_lis:
+      vertex_lis.append((i,j))
+
 FLAGS = flags.FLAGS
 
+flags.DEFINE_integer("human_player_id",1,"Which player is the human")
 flags.DEFINE_string("game_name", "risk",
                     "Name of the game.")
 flags.DEFINE_integer("num_players", 2,
@@ -89,7 +100,29 @@ class NFSPPolicies(policy.Policy):
     prob_dict = {action: p[action] for action in legal_actions}
     return prob_dict
 
-
+def visualise(info_state):
+  g = ig.Graph()
+  g.add_vertices(19)
+  for i in vertex_lis:
+    g.add_edges([(i[0],i[1])])
+  colour_dict = {0:'red',0.5:'black',1:'blue'}
+  g.vs["terr_no"]=[i for i in range(19)]
+  troops=[0 for i in range(19)]
+  ownership=[0.5 for i in range(19)]
+  for player in range(2):
+    for terr in range(19):
+      if player == 0 and info_state[21+terr]>0:
+        ownership[terr]=0
+        troops[terr]=info_state[21+terr]
+      if player == 1 and info_state[40+terr]>0:
+        ownership[terr]=1
+        troops[terr]=info_state[40+terr]
+  g.vs["player"]=ownership
+  g.vs["troops"]=troops
+  g.vs["label"]=["______"+str(g.vs["terr_no"][i])+","+str(g.vs["troops"][i]) for i in range(19)]
+  layout = g.layout_kamada_kawai()
+  return(ig.plot(g,layout=layout,vertex_color = [colour_dict[player] for player in g.vs["player"]]))
+  
 def main(unused_argv):
   logging.info("Loading %s", FLAGS.game_name)
   game = FLAGS.game_name
@@ -126,34 +159,25 @@ def main(unused_argv):
                   **kwargs) for idx in range(num_players)
     ]
     joint_avg_policy = NFSPPolicies(env, agents, nfsp.MODE.average_policy)
-
     sess.run(tf.global_variables_initializer())
-
     if FLAGS.use_checkpoints:
       for agent in agents:
         if agent.has_checkpoint(FLAGS.checkpoint_dir):
           agent.restore(FLAGS.checkpoint_dir)
 
-    for ep in range(FLAGS.num_train_episodes):
-      if (ep + 1) % FLAGS.eval_every == 0:
-        losses = [agent.loss for agent in agents]
-        logging.info("Losses: %s", losses)
-        if FLAGS.use_checkpoints:
-          for agent in agents:
-            agent.save(FLAGS.checkpoint_dir)
-        logging.info("_____________________________________________")
-
-      time_step = env.reset()
-      while not time_step.last():
-        player_id = time_step.observations["current_player"]
+    time_step = env.reset()
+    while not time_step.last():
+      player_id = time_step.observations["current_player"]
+      if FLAGS.human_player_id==player_id:
+        print(time_step.observations['info_state'][player_id])
+        print(time_step.observations['legal_actions'][player_id])
+        visualise(time_step.observations['info_state'][player_id])
+        human_action = input('Human action:')
+        time_step = env.step([int(human_action)])
+      else:
         agent_output = agents[player_id].step(time_step)
         action_list = [agent_output.action]
+        print(action_list)
         time_step = env.step(action_list)
-
-      # Episode is over, step all agents with final info state.
-      for agent in agents:
-        agent.step(time_step)
-
-
 if __name__ == "__main__":
   app.run(main)

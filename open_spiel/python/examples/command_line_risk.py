@@ -7,6 +7,7 @@ import tensorflow.compat.v1 as tf
 import numpy as np
 import igraph as ig
 import cairocffi
+import random
 
 from open_spiel.python import policy
 from open_spiel.python import rl_environment
@@ -169,11 +170,14 @@ def main(unused_argv):
     while not time_step.last():
       player_id = time_step.observations["current_player"]
       if FLAGS.human_player_id==player_id:
-        print(time_step.observations['info_state'][player_id])
-        print(time_step.observations['legal_actions'][player_id])
-        visualise(time_step.observations['info_state'][player_id])
-        human_action = input('Human action:')
-        time_step = env.step([int(human_action)])
+        if time_step.observations['info_state'][player_id][61]<40:
+          time_step = env.step([random.choice(time_step.observations['legal_actions'][player_id])])
+        else:
+          print(time_step.observations['info_state'][player_id])
+          print(time_step.observations['legal_actions'][player_id])
+          visualise(time_step.observations['info_state'][player_id])
+          human_action = input('Human action:')
+          time_step = env.step([int(human_action)])
       else:
         agent_output = agents[player_id].step(time_step)
         action_list = [agent_output.action]

@@ -87,7 +87,7 @@ def main(_):
   env = rl_environment.Environment(game, **env_configs)
   info_state_size = env.observation_spec()["info_state"][0]
   num_actions = env.action_spec()["num_actions"]
-
+  
   with tf.Session() as sess:
     # pylint: disable=g-complex-comprehension
     agents = [

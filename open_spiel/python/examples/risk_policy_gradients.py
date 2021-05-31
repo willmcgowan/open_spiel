@@ -31,6 +31,7 @@ from open_spiel.python.algorithms import policy_gradient
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer("num_episodes", int(1e5), "Number of train episodes.")
+flags.DEFINE_integer("batch_size",int(32),"size of training batches")
 flags.DEFINE_integer("eval_every", int(1e3), "Eval agents every x episodes.")
 flags.DEFINE_enum("loss_str", "rpg", ["a2c", "rpg", "qpg", "rm"],
                   "PG loss to use.")
@@ -97,7 +98,9 @@ def main(_):
             info_state_size,
             num_actions,
             loss_str=FLAGS.loss_str,
-            hidden_layers_sizes=(174,174,174,)) for idx in range(num_players)
+            hidden_layers_sizes=(174,174,174,),
+            batch_size = FLAGS.batch_size
+            ) for idx in range(num_players)
     ]
     expl_policies_avg = PolicyGradientPolicies(env, agents)
 

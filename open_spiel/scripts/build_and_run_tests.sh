@@ -192,7 +192,7 @@ else
   cmake -DPython3_EXECUTABLE=${PYBIN} \
         -DCMAKE_CXX_COMPILER=${CXX}                  \
         -DCMAKE_PREFIX_PATH=${LIBCXXWRAP_JULIA_DIR}  \
-        -DBUILD_TYPE=Testing                         \
+        -DBUILD_TYPE=Release                         \
         ../open_spiel
 
   if [ "$ARG_test_only" != "all" ]

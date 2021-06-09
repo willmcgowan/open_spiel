@@ -1439,7 +1439,7 @@ namespace open_spiel
 		}
 		//this implements some kind of infostate hashing protocol, think zobrist hashing etc for search based algos//
 		std::string RiskState::InformationStateString(Player player)const{
-			auto hash = absl::Hash<std::vector<int>>;
+			absl::Hash<std::vector<int>> hash;
 			std::vector<int> info_state(risk_parent_game_->InformationStateTensorShape()[0],0);
 			auto hand = GetHand(player);
 			for (int i = 0; i < num_terrs_ + 2; ++i){info_state[i]=hand[i];};
@@ -1449,7 +1449,7 @@ namespace open_spiel
 			auto hash_value = hash(info_state);
 			return std::to_string(hash_value);
 		}
-		std::unique_ptr<State> ResampleFromInfostate(int player_id, std::function<double()> rng) const {
+		std::unique_ptr<State> RiskState::ResampleFromInfostate(int player_id, std::function<double()> rng) const {
 			//this is exceptionally crude resampling//
 			auto clone = Clone();
 			auto hand = clone->GetHand(player_id);

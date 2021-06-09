@@ -153,7 +153,9 @@ class RiskState : public State {
   std::string ToString() const override;
   std::string ActionToString(Player player, Action action_id) const override;
   std::string Serialize() const override;
-
+  std::string InformationStateString(Player player) const override;
+  std::unique_ptr<State> ResampleFromInfostate(
+      int player_id, std::function<double()> rng) const override;
 protected:
   void DoApplyAction(Action move) override;
   int num_terrs_;

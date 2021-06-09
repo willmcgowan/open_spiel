@@ -30,11 +30,13 @@ from open_spiel.python.algorithms import policy_gradient
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer("num_episodes", int(1e5), "Number of train episodes.")
+flags.DEFINE_integer("num_episodes", int(1e3), "Number of train episodes.")
 flags.DEFINE_integer("batch_size",int(32),"size of training batches")
 flags.DEFINE_integer("eval_every", int(1e3), "Eval agents every x episodes.")
-flags.DEFINE_enum("loss_str", "rpg", ["a2c", "rpg", "qpg", "rm"],
+flags.DEFINE_enum("loss_str", "a2c", ["a2c", "rpg", "qpg", "rm"],
                   "PG loss to use.")
+flags.DEFINE_float("critic_learning_rate",0.0001,"critic learning rate")
+flags.DEFINE_float("pi_learning_rate",0.00001,"policy learning rate")
 flags.DEFINE_bool("use_checkpoints", True, "Save/load neural network weights.")
 flags.DEFINE_string("checkpoint_dir", "/tmp/risk_pgtest",
                   "Directory to save/load the agent.")
@@ -99,7 +101,9 @@ def main(_):
             num_actions,
             loss_str=FLAGS.loss_str,
             hidden_layers_sizes=(174,174,174,),
-            batch_size = FLAGS.batch_size
+            batch_size = FLAGS.batch_size,
+            critic_learning_rate = FLAGS.critic_learning_rate,
+            pi_learning_rate = FLAGS.pi_learning_rate,
             ) for idx in range(num_players)
     ]
     expl_policies_avg = PolicyGradientPolicies(env, agents)

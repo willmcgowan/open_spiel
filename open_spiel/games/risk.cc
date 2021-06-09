@@ -1,6 +1,7 @@
 
 #include "open_spiel/games/risk.h"
 
+#include <ctime>
 #include <algorithm>
 #include <array>
 #include <string>
@@ -9,6 +10,7 @@
 #include <unordered_map>
 #include <assert.h>
 #include <cmath>
+#include "open_spiel/abseil-cpp/absl/hash/hash.h"
 #include "open_spiel/abseil-cpp/absl/strings/str_cat.h"
 #include "open_spiel/fog/fog_constants.h"
 #include "open_spiel/game_parameters.h"
@@ -170,7 +172,7 @@ namespace open_spiel
 					for (int i = 0; i < num_terrs + 2; ++i)
 					{
 						assert(std::isfinite((float) hand[i]));
-						out.at(i) = (float) hand[i];
+						out.at(i) = hand[i];
 					}
 				}
 
@@ -180,17 +182,17 @@ namespace open_spiel
 					for (int i = 0; i < num_players * num_terrs + num_players + 14 + 5 * num_terrs; ++i)
 					{
 						assert(std::isfinite((float)state.board[i]));
-						out.at(i) = (float) state.board[i];
+						out.at(i) = state.board[i];
 					}
 					for (int i = 0; i < num_players; ++i)
 					{
 						assert(std::isfinite((float) state.GetHandSum(i)));
-						out.at(i + num_players * num_terrs + num_players + 14 + 5 * num_terrs) = (float)state.GetHandSum(i);
+						out.at(i + num_players * num_terrs + num_players + 14 + 5 * num_terrs) = state.GetHandSum(i);
 					}
 					for (int i = 0; i < num_players * (num_players - 1); ++i)
 					{
 						assert(std::isfinite((float) state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players]));
-						out.at(i + num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs) = (float) state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players];
+						out.at(i + num_players * num_terrs + 2 * num_players + 14 + 5 * num_terrs) = state.board[2 * num_players * num_terrs + 14 + 5 * num_terrs + 3 * num_players];
 					}
 				}
 			}
@@ -1288,7 +1290,7 @@ namespace open_spiel
 		}
 		void RiskState::DoApplyAction(Action action_id){
 			if(IsChanceNode()){
-				random_seed = risk_parent_game_->RNG();
+				long random_seed = risk_parent_game_->RNG();
 			}
 			ActionHandler(action_id,random_seed);
 			random_seeds.push_back(random_seed);
@@ -1434,6 +1436,49 @@ namespace open_spiel
 				str.append(std::to_string(history[i])+" "+std::to_string(random_seeds[i])+"\n");
 			}
 			return str;
+		}
+		//this implements some kind of infostate hashing protocol, think zobrist hashing etc for search based algos//
+		std::string RiskState::InformationStateString(Player player)const{
+			auto hash = absl::Hash<std::vector<int>>;
+			std::vector<int> info_state(risk_parent_game_->InformationStateTensorShape()[0],0);
+			auto hand = GetHand(player);
+			for (int i = 0; i < num_terrs_ + 2; ++i){info_state[i]=hand[i];};
+			for (int i = 0; i < num_players_ * num_terrs_ + num_players_ + 14 + 5 * num_terrs_; ++i){info_state[i+num_terrs_+2] = board[i];};
+			for (int i = 0; i < num_players_; ++i){info_state[i + num_players_ * num_terrs_ + num_players_ + 14 + 5 * num_terrs_+num_terrs_+2] = GetHandSum(i);};
+			for (int i = 0; i < num_players_ * (num_players_- 1); ++i){info_state[i + num_players_ * num_terrs_ + 2 * num_players_ + 14 + 5 * num_terrs_+num_terrs_+2] =  board[2 * num_players_ * num_terrs_ + 14 + 5 * num_terrs_ + 3 * num_players_];};
+			auto hash_value = hash(info_state);
+			return std::to_string(hash_value);
+		}
+		std::unique_ptr<State> ResampleFromInfostate(int player_id, std::function<double()> rng) const {
+			//this is exceptionally crude resampling//
+			auto clone = Clone();
+			auto hand = clone->GetHand(player_id);
+			std::vector<int> deck={};
+			for(int i =0;i<num_terrs_+2;++i){
+				if(hand[i]==0){
+					deck.push_back(i);
+				}
+			}
+			long seed = risk_parent_game_->RNG();
+			std::mt19937 gen(seed);
+			std::shuffle(deck.begin(),deck.end(),gen);
+			int count = 0;
+			for(int i =0 ; i<num_players_;++i){
+				if(i!=player_id){
+					int sum = clone->GetHandSum(i);	
+					for(int j=0;j<num_terrs_+2;++j){
+					clone->board[num_players_*num_terrs_+num_players_+14+5*num_terrs_+i*(num_terrs_+2)+j]=0;
+					}
+					while(sum>0){
+						int card = deck[count];
+						clone->board[num_players_*num_terrs_+num_players_+14+5*num_terrs_+i*(num_terrs_+2)+card];
+						sum -=1;
+						count+=1;
+					}
+				}
+
+			}
+			return clone;
 		}
 
 		RiskGame::RiskGame(const GameParameters& params)

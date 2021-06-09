@@ -1451,7 +1451,7 @@ namespace open_spiel
 		}
 		std::unique_ptr<State> RiskState::ResampleFromInfostate(int player_id, std::function<double()> rng) const {
 			//this is exceptionally crude resampling//
-			auto clone = Clone();
+			RiskState clone = Clone();
 			auto hand = clone->GetHand(player_id);
 			std::vector<int> deck={};
 			for(int i =0;i<num_terrs_+2;++i){

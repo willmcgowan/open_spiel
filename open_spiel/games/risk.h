@@ -121,17 +121,17 @@ class RiskState : public State {
  int GetMaxElim() const;//gets the total num of elims
  void EndTurn();//ends the turn of the current player and mutates board accordingly
  void Eliminate(int victim, int victor);//handles the player elimination process
- void Deal(long seed);//handles the card dealing process
+ void Deal(int seed);//handles the card dealing process
  void Cash();//handles the card cashing process
  void Income();//handles the income distrib process
  void Deploy(int amount);//handles the act of deploying
- void Attack(long seed);//handles the attack process
+ void Attack(int seed);//handles the attack process
  void Redistribute(int amount);//handles the redistrib process
  void Fortify(int amount);//handles the fortify process
  void DepthFirstSearch(int player, int vertex, std::vector<bool>* out) const;//used to determine legal fortifies given a chosen territory to fortify from//
  std::vector<int> GetAbstraction(int num, int abs) const;//pretty hacky way to reduce number of actions
  int RetAbstraction(int action, int abs) const;//ditto
- void ActionHandler(Action action_id,long seed) ;
+ void ActionHandler(Action action_id,int seed) ;
 
   //open spiel things//   
   explicit RiskState(std::shared_ptr<const RiskGame> game);
@@ -164,8 +164,8 @@ protected:
  private:
   friend class RiskObserver;
   friend class RiskGame;
-  long random_seed = kDefaultSeed;
-  std::vector<long> random_seeds = {};
+  int random_seed;
+  std::vector<int> random_seeds = {};
   std::shared_ptr<const RiskGame> risk_parent_game_;
 };
 

@@ -30,16 +30,16 @@ namespace open_spiel
 
 			// Default parameters.
 			constexpr int kDefaultPlayers = 2;
-			constexpr int kDefaultMap = 0;
+			constexpr int kDefaultMap = 1;
 			constexpr int kDefaultMaxTurns = 90;
 			constexpr bool kDefaultDepAbs = false;
-			constexpr bool kDefaultAtkAbs = false;
-			constexpr bool kDefaultRedistAbs = false;
-			constexpr bool kDefaultFortAbs = false;
-			constexpr int kDefaultDepQ = 41;
-			constexpr int kDefaultAtkQ = 1000;
-			constexpr int kDefaultRedistQ = 1000;
-			constexpr int kDefaultFortQ = 1000;
+			constexpr bool kDefaultAtkAbs = true;
+			constexpr bool kDefaultRedistAbs = true;
+			constexpr bool kDefaultFortAbs = true;
+			constexpr int kDefaultDepQ = 35;
+			constexpr int kDefaultAtkQ = 2;
+			constexpr int kDefaultRedistQ = 2;
+			constexpr int kDefaultFortQ = 2;
 			//constexpr int kDefaultSeed = 1;
 
 			// Facts about the game
@@ -213,6 +213,7 @@ namespace open_spiel
 		{
 			board = std::vector<int>(2 * num_players_ * num_terrs_ + 14 + 2 * num_players_ + num_players_ * num_players_ + 5 * num_terrs_, 0);
 			phse_constants_ = {0, num_terrs_ + 1, num_terrs_ + 1 +risk_parent_game_->action_q_[0], 2 * num_terrs_ + 2 + risk_parent_game_->action_q_[0], 3 * num_terrs_ + 2 + risk_parent_game_->action_q_[0], 3 * num_terrs_ + 2 + risk_parent_game_->action_q_[0] + risk_parent_game_->action_q_[1], 3 * num_terrs_ + 3 + risk_parent_game_->action_q_[0] + risk_parent_game_->action_q_[1] + risk_parent_game_->action_q_[2], 4 * num_terrs_ + 4 + risk_parent_game_->action_q_[0] + risk_parent_game_->action_q_[1] + risk_parent_game_->action_q_[2], 5 * num_terrs_ + 4 + risk_parent_game_->action_q_[0] +risk_parent_game_->action_q_[1] + risk_parent_game_->action_q_[2]};
+			random_seed = -1;
 			SetIncome(1);
 			SetPlayer(0);
 			SetPhse(0);
@@ -553,33 +554,22 @@ namespace open_spiel
 
 		std::array<int, 3> RiskState::GetSatCards(std::array<int, 3> component_arr) const
 		{
-			std::array<int, 3> arr = {0};
+			std::array<int, 3> arr = {0,0,0};
 			int player = GetPlayer();
 			auto hand = GetHand(player);
-			for (int i = 0; i < 3; ++i)
-			{
-				if (component_arr[i] == 0)
-				{
-					for (int j = 0; j <risk_parent_game_->card_arr_[0]; ++j)
-					{
-						if (GetCard(player, j))
-						{
-							arr[i] = j;
-							hand[j] = 0;
-							break;
-						}
-					}
+			for (int i = 0; i < 3; ++i){
+				int start;
+				if(component_arr[i]==0){
+					start =0;
 				}
-				else
-				{
-					for (int j = risk_parent_game_->card_arr_[component_arr[i] - 1]; j < risk_parent_game_->card_arr_[component_arr[i]]; ++j)
-					{
-						if (GetCard(player, j))
-						{
-							arr[i] = j;
-							hand[j] = 0;
-							break;
-						}
+				else{
+					start = risk_parent_game_->card_arr_[component_arr[i]-1];
+				}
+				for(int j = start;j<risk_parent_game_->card_arr_[component_arr[i]];++j){
+					if(hand[j]!=0 and GetCard(player,j)==1){
+						arr[i]=j;
+						hand[j]=0;
+						break;
 					}
 				}
 			}
@@ -685,7 +675,7 @@ namespace open_spiel
 			board[2 * num_players_ * num_terrs_ + 5 + 9 + 5 * num_terrs_ + 3 * num_players_ + victim * (num_players_ - 1) + max] = 1;
 		}
 
-		void RiskState::Deal(long seed)
+		void RiskState::Deal(int seed)
 		{
 			int player = GetPlayer();
 			assert(GetChance() == 1);
@@ -734,7 +724,7 @@ namespace open_spiel
 			{
 				if (sat_cards[i] < num_terrs_ && bonus == false)
 				{
-					if (GetOwner(sat_cards[i] == player))
+					if (GetOwner(sat_cards[i])== player)
 					{
 						bonus = true;
 						IncrementTerr(sat_cards[i], player, 2);
@@ -817,7 +807,7 @@ namespace open_spiel
 			}
 		}
 
-		void RiskState::Attack(long seed)
+		void RiskState::Attack(int seed)
 		{
 			double prob_arr[6][2] = {{0.2925668724279835, 0.628343621399177}, {0.3402777777777778, 1.0}, {0.44830246913580246, 0.7723765432098766}, {0.4212962962962963, 1.0}, {0.7453703703703703, 1.0}, {0.5833333333333334, 1.0}};
 			std::unordered_map<int, int> dict = { {10,0},{4,1},{8,2},{3,3},{2,5},{6,4}};
@@ -973,7 +963,10 @@ namespace open_spiel
 		{
 			std::vector<Action> res = {};
 			int player = GetPlayer();
-			if (GetChance() == 1)
+			if(IsTerminal()){
+				return res;
+			}
+			else if (GetChance() == 1)
 			{
 				res.push_back(0);
 			}
@@ -1177,7 +1170,7 @@ namespace open_spiel
 			return res;
 		}
 
-		void RiskState::ActionHandler(Action action_id,long seed)
+		void RiskState::ActionHandler(Action action_id,int seed)
 		{
 			int player = GetPlayer();
 			if (action_id == 0 && GetChance())
@@ -1290,7 +1283,7 @@ namespace open_spiel
 		}
 		void RiskState::DoApplyAction(Action action_id){
 			if(IsChanceNode()){
-				long random_seed = risk_parent_game_->RNG();
+				random_seed = risk_parent_game_->RNG();
 			}
 			ActionHandler(action_id,random_seed);
 			random_seeds.push_back(random_seed);
@@ -1363,7 +1356,7 @@ namespace open_spiel
 
 		bool RiskState::IsTerminal() const
 		{
-			if (GetMaxElim() == num_players_ || GetTurns() >= risk_parent_game_->max_turns_)
+			if (GetMaxElim() == num_players_ -1|| GetTurns() >= risk_parent_game_->max_turns_)
 			{
 				return true;
 			}
@@ -1451,7 +1444,7 @@ namespace open_spiel
 		}
 		std::unique_ptr<State> RiskState::ResampleFromInfostate(int player_id, std::function<double()> rng) const {
 			//this is exceptionally crude resampling//
-			RiskState clone = Clone();
+			auto clone = std::unique_ptr<RiskState>(new RiskState(*this));
 			auto hand = clone->GetHand(player_id);
 			std::vector<int> deck={};
 			for(int i =0;i<num_terrs_+2;++i){
@@ -1471,7 +1464,7 @@ namespace open_spiel
 					}
 					while(sum>0){
 						int card = deck[count];
-						clone->board[num_players_*num_terrs_+num_players_+14+5*num_terrs_+i*(num_terrs_+2)+card];
+						clone->board[num_players_*num_terrs_+num_players_+14+5*num_terrs_+i*(num_terrs_+2)+card]=1;
 						sum -=1;
 						count+=1;
 					}
